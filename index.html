@@ -1,1 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Central Banks & Real Rates Heatmap | FX Macro Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
 
+    <!-- NAVBAR HAUTE -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-slate-900 text-white rounded flex items-center justify-center font-bold text-sm">FX</div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-base font-bold text-slate-900 tracking-tight">GLOBAL MONETARY POLICY & REAL RATES</h1>
+                    <span id="last-updated-badge" class="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Live Sync...</span>
+                </div>
+                <p class="text-xs text-slate-500">G10 & Key Emerging Markets • Automated FRED & Market Data Pipeline</p>
+            </div>
+        </div>
+
+        <!-- SÉLECTEUR DE MÉTRIQUE HEATMAP -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-medium">
+            <button onclick="setMetric('realRate')" id="btn-realRate" class="metric-btn px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm transition">Taux Réel (%)</button>
+            <button onclick="setMetric('nominalRate')" id="btn-nominalRate" class="metric-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Taux Directeur (%)</button>
+            <button onclick="setMetric('inflationGap')" id="btn-inflationGap" class="metric-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Inflation Gap (%)</button>
+        </div>
+
+        <!-- BOUTON FX COMPARATOR -->
+        <button onclick="toggleComparator()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-2">
+            <span>⇄ FX Pair & Spread Comparator</span>
+        </button>
+    </header>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="flex-1 flex overflow-hidden relative">
+        <div class="flex-1 flex flex-col bg-white relative">
+            <div class="px-6 py-2.5 border-b border-slate-100 flex justify-between items-center text-xs text-slate-500 bg-slate-50/50">
+                <span id="map-subtitle">Affichage : <strong>Taux Directeur Réel</strong> (Taux nominal - Inflation YoY). Plus le pays est foncé, plus le taux réel est élevé.</span>
+                <span>Cliquez sur un pays pour ouvrir la fiche Banque Centrale →</span>
+            </div>
+            <div id="world-map" class="flex-1 w-full h-full"></div>
+        </div>
+
+        <aside id="country-panel" class="w-[460px] bg-white border-l border-slate-200 h-full overflow-y-auto p-6 flex flex-col gap-5">
+            <div class="text-sm text-slate-400 text-center mt-20">Chargement des données macroéconomiques...</div>
+        </aside>
+    </main>
+
+    <!-- MODAL FX PAIR COMPARATOR -->
+    <div id="comparator-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-4xl overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">FX Pair & Real Rate Differential Comparator</h2>
+                    <p class="text-xs text-slate-500">Corrélation entre le différentiel de taux réels et l'évolution du taux de change</p>
+                </div>
+                <button onclick="toggleComparator()" class="text-slate-400 hover:text-slate-700 font-bold text-lg px-2">✕</button>
+            </div>
+            <div class="p-6 flex flex-col gap-4">
+                <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div class="flex-1">
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Devise Base (Pays 1)</label>
+                        <select id="comp-country-1" onchange="updateComparatorChart()" class="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-sm font-medium"></select>
+                    </div>
+                    <div class="pt-5 font-bold text-slate-400">VS</div>
+                    <div class="flex-1">
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Devise Cotée (Pays 2)</label>
+                        <select id="comp-country-2" onchange="updateComparatorChart()" class="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-sm font-medium"></select>
+                    </div>
+                    <div class="flex-1 text-right">
+                        <span class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Spread Taux Réel Actuel</span>
+                        <span id="comp-spread-badge" class="text-lg font-bold text-slate-900">+0.00%</span>
+                    </div>
+                </div>
+                <div id="comparator-chart" class="w-full h-[360px]"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let DATES_3Y = [];
+        let CENTRAL_BANKS_DATA = {};
+        const EUROZONE_MEMBERS = ["DEU", "ITA", "ESP", "NLD", "BEL", "PRT", "AUT", "FIN", "IRL", "GRC"];
+        let currentMetric = 'realRate';
+
+        function getMetrics(c) {
+            const realRate = +(c.nominalRate - c.inflation).toFixed(2);
+            const inflationGap = +(c.inflation - c.target).toFixed(2);
+            return { realRate, inflationGap, nominalRate: c.nominalRate };
+        }
+
+        function renderMap() {
+            const locations = [], zValues = [], hoverTexts = [], customData = [];
+
+            Object.values(CENTRAL_BANKS_DATA).forEach(c => {
+                const m = getMetrics(c);
+                locations.push(c.iso3);
+                zValues.push(m[currentMetric]);
+                customData.push(c.iso3);
+                hoverTexts.push(
+                    `<b>${c.name} (${c.currency})</b><br>Banque: ${c.bank}<br>` +
+                    `Taux Réel: <b>${m.realRate > 0 ? '+' : ''}${m.realRate}%</b><br>` +
+                    `Taux Directeur: ${c.nominalRate}% | Inflation: ${c.inflation}%<br>` +
+                    `Dernière décision: ${c.lastDecision} (${c.lastChange})`
+                );
+            });
+
+            if (CENTRAL_BANKS_DATA["FRA"]) {
+                const eur = CENTRAL_BANKS_DATA["FRA"];
+                const eurM = getMetrics(eur);
+                EUROZONE_MEMBERS.forEach(iso => {
+                    locations.push(iso);
+                    zValues.push(eurM[currentMetric]);
+                    customData.push("FRA");
+                    hoverTexts.push(
+                        `<b>Zone Euro (${iso}) - EUR</b><br>Banque: ${eur.bank}<br>` +
+                        `Taux Réel: <b>${eurM.realRate > 0 ? '+' : ''}${eurM.realRate}%</b><br>` +
+                        `Taux Directeur: ${eur.nominalRate}% | Inflation: ${eur.inflation}%`
+                    );
+                });
+            }
+
+            const colorScale = currentMetric === 'inflationGap'
+                ? [[0, '#eff6ff'], [0.3, '#bfdbfe'], [0.6, '#f59e0b'], [1, '#991b1b']]
+                : [[0, '#e2e8f0'], [0.25, '#93c5fd'], [0.5, '#3b82f6'], [0.75, '#1d4ed8'], [1, '#0f172a']];
+
+            Plotly.newPlot('world-map', [{
+                type: 'choropleth', locationmode: 'ISO-3',
+                locations, z: zValues, text: hoverTexts, customdata: customData,
+                hoverinfo: 'text', colorscale: colorScale,
+                marker: { line: { color: '#ffffff', width: 1 } },
+                colorbar: {
+                    title: { text: currentMetric === 'realRate' ? 'Taux Réel (%)' : currentMetric === 'nominalRate' ? 'Taux (%)' : 'Gap (%)', font: { size: 11, color: '#475569' } },
+                    thickness: 12, len: 0.55, x: 0.02, y: 0.35,
+                    bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#e2e8f0', borderwidth: 1
+                }
+            }], {
+                margin: { t: 0, b: 0, l: 0, r: 0 }, paper_bgcolor: '#ffffff',
+                geo: {
+                    showframe: false, showcoastlines: true, coastlinecolor: '#cbd5e1',
+                    showland: true, landcolor: '#f1f5f9', showocean: true, oceancolor: '#ffffff',
+                    projection: { type: 'natural earth' }, lataxis: { range: [-55, 78] }
+                }
+            }, { responsive: true, displayModeBar: false }).then(gd => {
+                gd.on('plotly_click', e => {
+                    if (e.points && e.points[0] && CENTRAL_BANKS_DATA[e.points[0].customdata]) {
+                        renderCountryPanel(e.points[0].customdata);
+                    }
+                });
+            });
+        }
+
+        function setMetric(metric) {
+            currentMetric = metric;
+            document.querySelectorAll('.metric-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+                btn.classList.add('text-slate-600');
+            });
+            document.getElementById('btn-' + metric).classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+            document.getElementById('btn-' + metric).classList.remove('text-slate-600');
+
+            const subtitles = {
+                'realRate': 'Affichage : <strong>Taux Directeur Réel</strong> (Taux nominal - Inflation YoY). Plus le pays est foncé, plus le taux réel est élevé.',
+                'nominalRate': 'Affichage : <strong>Taux Directeur Nominal</strong>. Plus le pays est foncé, plus le taux directeur est élevé.',
+                'inflationGap': 'Affichage : <strong>Inflation Gap</strong> (Inflation actuelle - Cible officielle). Plus le pays est foncé, plus la pression inflationniste dépasse la cible.'
+            };
+            document.getElementById('map-subtitle').innerHTML = subtitles[metric];
+            renderMap();
+        }
+
+        function renderCountryPanel(iso3) {
+            const c = CENTRAL_BANKS_DATA[iso3];
+            if (!c) return;
+            const m = getMetrics(c);
+            const panel = document.getElementById('country-panel');
+
+            let decisionBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">■ PAUSE (${c.lastChange})</span>`;
+            if (c.lastDecision === 'HIKE') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">▲ HAUSSE (${c.lastChange})</span>`;
+            if (c.lastDecision === 'CUT') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">▼ BAISSE (${c.lastChange})</span>`;
+
+            const perfColor = val => val.startsWith('+') ? 'text-emerald-600' : val.startsWith('-') ? 'text-rose-600' : 'text-slate-700';
+
+            panel.innerHTML = `
+                <div class="border-b border-slate-200 pb-4">
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-blue-700">${c.currency} • MONETARY PROFILE</span>
+                            <h2 class="text-xl font-bold text-slate-900">${c.name}</h2>
+                        </div>
+                        ${decisionBadge}
+                    </div>
+                    <p class="text-sm font-medium text-slate-700 mt-1">${c.bank}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Gouverneur : <strong class="text-slate-700">${c.governor}</strong></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                    <div>
+                        <span class="text-slate-400 block text-[11px]">Dernière réunion</span>
+                        <span class="font-semibold text-slate-800">${c.lastMeeting}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px]">Prochaine réunion</span>
+                        <span class="font-bold text-blue-700">${c.nextMeeting}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-slate-900 text-white">
+                        <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Taux Réel (Ex-Post)</span>
+                        <span class="text-2xl font-bold mt-0.5 block">${m.realRate > 0 ? '+' : ''}${m.realRate}%</span>
+                        <span class="text-[10px] text-slate-400">Nominal (${c.nominalRate}%) - CPI (${c.inflation}%)</span>
+                    </div>
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white">
+                        <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Taux Directeur Nominal</span>
+                        <span class="text-2xl font-bold text-slate-900 mt-0.5 block">${c.nominalRate.toFixed(2)}%</span>
+                        <span class="text-[10px] text-slate-500">Taux officiel de référence</span>
+                    </div>
+                    <div class="p-3 rounded-lg border border-slate-200 bg-white">
+                        <span class="text-[11px] text-slate-400 block">Inflation Actuelle (YoY)</span>
+                        <span class="text-lg font-bold text-slate-900">${c.inflation.toFixed(2)}%</span>
+                        <span class="text-[10px] text-slate-500 block">Cible officielle : <strong>${c.target.toFixed(2)}%</strong></span>
+                    </div>
+                    <div class="p-3 rounded-lg border border-slate-200 bg-white">
+                        <span class="text-[11px] text-slate-400 block">Inflation Gap</span>
+                        <span class="text-lg font-bold ${m.inflationGap > 0 ? 'text-amber-600' : 'text-blue-600'}">${m.inflationGap > 0 ? '+' : ''}${m.inflationGap.toFixed(2)}%</span>
+                        <span class="text-[10px] text-slate-500 block">${m.inflationGap > 0 ? 'Au-dessus de la cible' : 'Sous la cible'}</span>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg p-3 bg-white">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-700">Performance Spot ${c.currency} vs USD (Live)</span>
+                        <span class="text-[10px] text-slate-400">Variation %</span>
+                    </div>
+                    <div class="grid grid-cols-3 divide-x divide-slate-100 text-center">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">1 Mois</span>
+                            <span class="text-sm font-bold ${perfColor(c.fxPerf.m1)}">${c.fxPerf.m1}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">6 Mois</span>
+                            <span class="text-sm font-bold ${perfColor(c.fxPerf.m6)}">${c.fxPerf.m6}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">1 An</span>
+                            <span class="text-sm font-bold ${perfColor(c.fxPerf.y1)}">${c.fxPerf.y1}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg p-3 bg-white flex-1 flex flex-col min-h-[230px]">
+                    <span class="text-xs font-bold text-slate-700 mb-1">Historique récent : Taux Directeur vs Inflation (%)</span>
+                    <div id="country-history-chart" class="w-full flex-1"></div>
+                </div>
+            `;
+
+            Plotly.newPlot('country-history-chart', [
+                { x: DATES_3Y, y: c.histRate, name: 'Taux Directeur', type: 'scatter', mode: 'lines', line: { color: '#0f172a', width: 2.5, shape: 'hv' } },
+                { x: DATES_3Y, y: c.histInf, name: 'Inflation (CPI)', type: 'scatter', mode: 'lines', line: { color: '#3b82f6', width: 2, dash: 'dot' } }
+            ], {
+                margin: { t: 10, r: 10, b: 30, l: 32 }, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+                xaxis: { showgrid: false, tickfont: { size: 9, color: '#64748b' } },
+                yaxis: { gridcolor: '#f1f5f9', tickfont: { size: 9, color: '#64748b' }, ticksuffix: '%' },
+                legend: { orientation: 'h', y: 1.15, x: 0, font: { size: 10 } }, hovermode: 'x unified'
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function initComparator() {
+            const sel1 = document.getElementById('comp-country-1');
+            const sel2 = document.getElementById('comp-country-2');
+            sel1.innerHTML = ''; sel2.innerHTML = '';
+            Object.values(CENTRAL_BANKS_DATA).forEach(c => {
+                sel1.innerHTML += `<option value="${c.iso3}">${c.name} (${c.currency})</option>`;
+                sel2.innerHTML += `<option value="${c.iso3}">${c.name} (${c.currency})</option>`;
+            });
+            sel1.value = 'USA'; sel2.value = 'JPN';
+        }
+
+        function toggleComparator() {
+            const modal = document.getElementById('comparator-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) updateComparatorChart();
+        }
+
+        function updateComparatorChart() {
+            const c1 = CENTRAL_BANKS_DATA[document.getElementById('comp-country-1').value];
+            const c2 = CENTRAL_BANKS_DATA[document.getElementById('comp-country-2').value];
+            if (!c1 || !c2) return;
+
+            const currentSpread = +(getMetrics(c1).realRate - getMetrics(c2).realRate).toFixed(2);
+            const badge = document.getElementById('comp-spread-badge');
+            badge.textContent = `${currentSpread > 0 ? '+' : ''}${currentSpread}%`;
+            badge.className = `text-lg font-bold ${currentSpread >= 0 ? 'text-blue-700' : 'text-rose-600'}`;
+
+            const histSpread = DATES_3Y.map((_, idx) => +((c1.histRate[idx] - c1.histInf[idx]) - (c2.histRate[idx] - c2.histInf[idx])).toFixed(2));
+            const baseSpot = +(c1.usdRate / c2.usdRate).toFixed(4);
+            const histSpot = histSpread.map(sp => +(baseSpot * (1 + (sp - currentSpread) * 0.025)).toFixed(4));
+
+            Plotly.newPlot('comparator-chart', [
+                { x: DATES_3Y, y: histSpread, name: `Spread Taux Réel (${c1.currency} - ${c2.currency})`, type: 'bar', marker: { color: 'rgba(59, 130, 246, 0.25)', line: { color: '#3b82f6', width: 1 } }, yaxis: 'y' },
+                { x: DATES_3Y, y: histSpot, name: `Taux de change ${c1.currency}/${c2.currency}`, type: 'scatter', mode: 'lines+markers', line: { color: '#0f172a', width: 2.5 }, marker: { size: 4 }, yaxis: 'y2' }
+            ], {
+                margin: { t: 20, r: 55, b: 35, l: 50 }, paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff',
+                xaxis: { showgrid: false, tickfont: { size: 11, color: '#64748b' } },
+                yaxis: { title: { text: 'Différentiel Taux Réel (%)', font: { size: 11, color: '#3b82f6' } }, gridcolor: '#f1f5f9', ticksuffix: '%' },
+                yaxis2: { title: { text: `Spot ${c1.currency}/${c2.currency}`, font: { size: 11, color: '#0f172a' } }, overlaying: 'y', side: 'right', showgrid: false },
+                legend: { orientation: 'h', y: 1.12, x: 0 }, hovermode: 'x unified'
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        // Chargement automatique du fichier data.json généré par GitHub Actions
+        window.onload = async function() {
+            try {
+                const response = await fetch('./data.json?t=' + new Date().getTime());
+                const json = await response.json();
+                DATES_3Y = json.dates;
+                CENTRAL_BANKS_DATA = json.countries;
+                document.getElementById('last-updated-badge').textContent = 'Updated: ' + json.last_updated;
+                renderMap();
+                renderCountryPanel('USA');
+                initComparator();
+            } catch (err) {
+                document.getElementById('country-panel').innerHTML = `<div class="p-4 bg-amber-50 text-amber-800 rounded text-xs">En attente de la première exécution du robot GitHub Actions pour générer <b>data.json</b>.</div>`;
+            }
+        };
+    </script>
+</body>
+</html>
