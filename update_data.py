@@ -6,7 +6,6 @@ import yfinance as yf
 
 FRED_API_KEY = os.environ.get("FRED_API_KEY")
 
-# Mapping des séries FRED officielles (Taux directeurs & Inflation YoY ou CPI)
 COUNTRIES_CONFIG = {
     "USA": {
         "name": "États-Unis", "currency": "USD", "bank": "Federal Reserve (Fed)",
@@ -24,7 +23,7 @@ COUNTRIES_CONFIG = {
         "name": "Royaume-Uni", "currency": "GBP", "bank": "Bank of England (BoE)",
         "governor": "Andrew Bailey", "target": 2.00,
         "lastMeeting": "05 Nov 2026", "nextMeeting": "17 Déc 2026",
-        "rate_series": "BOERUKM", "cpi_series": "GBRCPIALLMINMEI", "yf_ticker": "GBPUSD=X"
+        "rate_series": "IUDSOIA", "cpi_series": "GBRCPIALLMINMEI", "yf_ticker": "GBPUSD=X"
     },
     "JPN": {
         "name": "Japon", "currency": "JPY", "bank": "Bank of Japan (BoJ)",
@@ -76,12 +75,17 @@ COUNTRIES_CONFIG = {
     }
 }
 
-def fetch_fred_series(series_id, limit=48):
+def fetch_fred_monthly_map(series_id, limit=1200):
+    """Récupère une série FRED (quotidienne ou mensuelle) et la regroupe par mois YYYY-MM (dernière valeur du mois)."""
     url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_API_KEY}&file_type=json&sort_order=desc&limit={limit}"
     r = requests.get(url, timeout=15).json()
     obs = [o for o in r.get("observations", []) if o["value"] != "."]
     obs.reverse()
-    return obs
+    monthly = {}
+    for o in obs:
+        ym = o["date"][:7]  # Ex: "2025-04"
+        monthly[ym] = float(o["value"])
+    return monthly
 
 def get_fx_metrics(ticker):
     if not ticker:
@@ -89,7 +93,6 @@ def get_fx_metrics(ticker):
     try:
         hist = yf.Ticker(ticker).history(period="1y")["Close"].dropna()
         current = float(hist.iloc[-1])
-        # Si ticker est XXX=X (ex: JPY=X = USD/JPY), on inverse pour avoir valeur de 1 devise en USD
         invert = not ticker.endswith("USD=X")
         spot_usd = (1.0 / current) if invert else current
 
@@ -109,33 +112,40 @@ def get_fx_metrics(ticker):
         return 1.0, {"m1": "N/A", "m6": "N/A", "y1": "N/A"}
 
 def main():
+    # On récupère d'abord les 24 derniers mois disponibles sur l'inflation US comme calendrier maître
+    us_cpi = fetch_fred_monthly_map("CPIAUCSL", limit=60)
+    sorted_months = sorted(us_cpi.keys())
+    target_months = sorted_months[-24:]  # Les 24 derniers mois exacts (2 ans glissants)
+
     output = {
         "last_updated": datetime.utcnow().strftime("%d %b %Y - %H:%M UTC"),
-        "dates": [],
+        "dates": target_months,
         "countries": {}
     }
 
     for iso, cfg in COUNTRIES_CONFIG.items():
-        print(f"Fetching {iso}...")
-        rates_obs = fetch_fred_series(cfg["rate_series"], limit=36)
-        cpi_obs = fetch_fred_series(cfg["cpi_series"], limit=48)
+        print(f"Alignement chronologique {iso}...")
+        rate_map = fetch_fred_monthly_map(cfg["rate_series"], limit=1200)
+        cpi_map = fetch_fred_monthly_map(cfg["cpi_series"], limit=60)
 
-        # Calcul de l'inflation annuelle (YoY %) à partir de l'indice CPI
-        yoy_inf = []
-        dates_list = []
-        for i in range(12, len(cpi_obs)):
-            curr_cpi = float(cpi_obs[i]["value"])
-            prev_cpi = float(cpi_obs[i - 12]["value"])
-            inf_val = round(((curr_cpi - prev_cpi) / prev_cpi) * 100, 2)
-            yoy_inf.append(inf_val)
-            dates_list.append(cpi_obs[i]["date"][:7])
+        hist_rate = []
+        hist_inf = []
+        last_known_rate = list(rate_map.values())[-1] if rate_map else 0.0
+        last_known_inf = 2.0
 
-        # Alignement des 18 derniers points (3 ans bimestriels ou 18 derniers mois)
-        n_points = min(18, len(yoy_inf), len(rates_obs))
-        hist_inf = yoy_inf[-n_points:]
-        hist_rate = [round(float(x["value"]), 2) for x in rates_obs[-n_points:]]
-        if not output["dates"]:
-            output["dates"] = dates_list[-n_points:]
+        for ym in target_months:
+            # Taux directeur du mois exact (ou report de la dernière valeur connue si décalage de publication)
+            if ym in rate_map:
+                last_known_rate = round(rate_map[ym], 2)
+            hist_rate.append(last_known_rate)
+
+            # Inflation YoY du mois exact : (CPI_t - CPI_t-12) / CPI_t-12
+            year, month = map(int, ym.split("-"))
+            prev_ym = f"{year - 1}-{month:02d}"
+            if ym in cpi_map and prev_ym in cpi_map:
+                inf_val = round(((cpi_map[ym] - cpi_map[prev_ym]) / cpi_map[prev_ym]) * 100, 2)
+                last_known_inf = inf_val
+            hist_inf.append(last_known_inf)
 
         nom_rate = hist_rate[-1]
         prev_rate = hist_rate[-2] if len(hist_rate) > 1 else nom_rate
@@ -171,7 +181,7 @@ def main():
 
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
-    print("data.json généré avec succès !")
+    print("data.json aligné et généré avec succès !")
 
 if __name__ == "__main__":
     main()
