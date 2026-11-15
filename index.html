@@ -16,39 +16,31 @@
 </head>
 <body class="min-h-screen lg:h-screen flex flex-col lg:overflow-hidden">
 
-    <!-- NAVBAR HAUTE RESPONSIVE -->
     <header class="bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 z-10">
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 shrink-0 bg-slate-900 text-white rounded flex items-center justify-center font-bold text-sm">FX</div>
-                <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-tight">GLOBAL MONETARY POLICY & REAL RATES</h1>
-                        <span id="last-updated-badge" class="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Live Sync...</span>
-                    </div>
-                    <p class="text-[11px] sm:text-xs text-slate-500">G10 & Key Emerging Markets • Automated FRED & Market Data</p>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 shrink-0 bg-slate-900 text-white rounded flex items-center justify-center font-bold text-sm">FX</div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h1 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-tight">GLOBAL MONETARY POLICY & REAL RATES</h1>
+                    <span id="last-updated-badge" class="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Chargement...</span>
                 </div>
+                <p class="text-[11px] sm:text-xs text-slate-500">G10 & Key Emerging Markets • FRED, BIS, BoC, BCB & Market Data</p>
             </div>
         </div>
 
-        <!-- BARRE D'ACTIONS (MÉTRIQUES + COMPARATOR) -->
         <div class="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full lg:w-auto">
             <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-[11px] sm:text-xs font-medium flex-1 sm:flex-initial justify-between">
                 <button onclick="setMetric('realRate')" id="btn-realRate" class="metric-btn flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm transition">Taux Réel</button>
                 <button onclick="setMetric('nominalRate')" id="btn-nominalRate" class="metric-btn flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Nominal</button>
                 <button onclick="setMetric('inflationGap')" id="btn-inflationGap" class="metric-btn flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Inf. Gap</button>
             </div>
-
             <button onclick="toggleComparator()" class="w-full sm:w-auto justify-center bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2">
                 <span>⇄ FX Pair & Spread Comparator</span>
             </button>
         </div>
     </header>
 
-    <!-- CONTENU PRINCIPAL RESPONSIVE -->
     <main class="flex-1 flex flex-col lg:flex-row lg:overflow-hidden relative">
-        
-        <!-- ZONE CARTE DU MONDE -->
         <div class="w-full lg:flex-1 flex flex-col bg-white relative border-b lg:border-b-0 border-slate-200">
             <div class="px-4 lg:px-6 py-2 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-[11px] sm:text-xs text-slate-500 bg-slate-50/50">
                 <span id="map-subtitle">Affichage : <strong>Taux Directeur Réel</strong> (Nominal - CPI). Plus c'est foncé, plus le taux est élevé.</span>
@@ -57,19 +49,17 @@
             <div id="world-map" class="w-full h-[330px] sm:h-[420px] lg:h-full lg:flex-1"></div>
         </div>
 
-        <!-- PANNEAU LATÉRAL / INFÉRIEUR (FICHE PAYS) -->
         <aside id="country-panel" class="w-full lg:w-[460px] bg-white lg:border-l border-slate-200 lg:h-full lg:overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
             <div class="text-sm text-slate-400 text-center py-12">Chargement des données macroéconomiques...</div>
         </aside>
     </main>
 
-    <!-- MODAL FX PAIR COMPARATOR RESPONSIVE -->
-    <div id="comparator-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4">
+    <div id="comparator-modal" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-2 sm:p-4">
         <div class="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col">
             <div class="px-4 sm:px-6 py-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50 sticky top-0 z-10">
                 <div>
                     <h2 class="text-sm sm:text-base font-bold text-slate-900">FX Pair & Real Rate Differential</h2>
-                    <p class="text-[11px] sm:text-xs text-slate-500">Différentiel de taux réels vs évolution du taux de change</p>
+                    <p class="text-[11px] sm:text-xs text-slate-500">Différentiel de taux réels vs taux de change (historique réel)</p>
                 </div>
                 <button onclick="toggleComparator()" class="text-slate-400 hover:text-slate-700 font-bold text-lg px-2">✕</button>
             </div>
@@ -87,7 +77,7 @@
                 </div>
                 <div class="flex justify-between items-center px-3 py-2 bg-blue-50/60 border border-blue-100 rounded-lg">
                     <span class="text-xs font-semibold text-slate-600">Spread Taux Réel Actuel :</span>
-                    <span id="comp-spread-badge" class="text-base sm:text-lg font-bold text-slate-900">+0.00%</span>
+                    <span id="comp-spread-badge" class="text-base sm:text-lg font-bold text-slate-900">n.d.</span>
                 </div>
                 <div id="comparator-chart" class="w-full h-[280px] sm:h-[350px]"></div>
             </div>
@@ -97,12 +87,15 @@
     <script>
         let DATES_3Y = [];
         let CENTRAL_BANKS_DATA = {};
-        const EUROZONE_MEMBERS = ["DEU", "ITA", "ESP", "NLD", "BEL", "PRT", "AUT", "FIN", "IRL", "GRC"];
+        const EUROZONE_MEMBERS = ["DEU","ITA","ESP","NLD","BEL","PRT","AUT","FIN","IRL","GRC","LUX","SVK","SVN","EST","LVA","LTU","CYP","MLT","HRV","BGR"];
         let currentMetric = 'realRate';
 
+        // Affichage sûr : null -> "n.d."
+        const pct = (v, d = 2, sign = false) => v == null ? 'n.d.' : (sign && v > 0 ? '+' : '') + v.toFixed(d) + '%';
+
         function getMetrics(c) {
-            const realRate = +(c.nominalRate - c.inflation).toFixed(2);
-            const inflationGap = +(c.inflation - c.target).toFixed(2);
+            const realRate = c.inflation == null ? null : +(c.nominalRate - c.inflation).toFixed(2);
+            const inflationGap = c.inflation == null ? null : +(c.inflation - c.target).toFixed(2);
             return { realRate, inflationGap, nominalRate: c.nominalRate };
         }
 
@@ -117,9 +110,10 @@
                 customData.push(c.iso3);
                 hoverTexts.push(
                     `<b>${c.name} (${c.currency})</b><br>Banque: ${c.bank}<br>` +
-                    `Taux Réel: <b>${m.realRate > 0 ? '+' : ''}${m.realRate}%</b><br>` +
-                    `Taux Directeur: ${c.nominalRate}% | Inflation: ${c.inflation}%<br>` +
-                    `Décision: ${c.lastDecision} (${c.lastChange})`
+                    `Taux Réel: <b>${pct(m.realRate, 2, true)}</b><br>` +
+                    `Taux Directeur: ${pct(c.nominalRate)} | Inflation: ${pct(c.inflation)}<br>` +
+                    `Dernier mouvement: ${c.lastDecision} (${c.lastChange})` +
+                    ((c.warnings || []).length ? `<br>⚠ ${c.warnings.join(' • ')}` : '')
                 );
             });
 
@@ -132,8 +126,8 @@
                     customData.push("FRA");
                     hoverTexts.push(
                         `<b>Zone Euro (${iso}) - EUR</b><br>Banque: ${eur.bank}<br>` +
-                        `Taux Réel: <b>${eurM.realRate > 0 ? '+' : ''}${eurM.realRate}%</b><br>` +
-                        `Taux Directeur: ${eur.nominalRate}% | Inflation: ${eur.inflation}%`
+                        `Taux Réel: <b>${pct(eurM.realRate, 2, true)}</b><br>` +
+                        `Taux Directeur: ${pct(eur.nominalRate)} | Inflation: ${pct(eur.inflation)}`
                     );
                 });
             }
@@ -148,12 +142,7 @@
                 hoverinfo: 'text', colorscale: colorScale,
                 marker: { line: { color: '#ffffff', width: 0.8 } },
                 colorbar: isMobile ? {
-                    orientation: 'h',
-                    thickness: 8,
-                    len: 0.7,
-                    x: 0.5,
-                    xanchor: 'center',
-                    y: 0.04,
+                    orientation: 'h', thickness: 8, len: 0.7, x: 0.5, xanchor: 'center', y: 0.04,
                     tickfont: { size: 9, color: '#475569' }
                 } : {
                     title: { text: currentMetric === 'realRate' ? 'Taux Réel (%)' : currentMetric === 'nominalRate' ? 'Taux (%)' : 'Gap (%)', font: { size: 11, color: '#475569' } },
@@ -202,12 +191,15 @@
             if (!c) return;
             const m = getMetrics(c);
             const panel = document.getElementById('country-panel');
+            const when = c.lastChangeMonth ? ` • ${c.lastChangeMonth}` : '';
 
-            let decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">■ PAUSE (${c.lastChange})</span>`;
-            if (c.lastDecision === 'HIKE') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-red-50 text-red-700 border border-red-200 shrink-0">▲ HAUSSE (${c.lastChange})</span>`;
-            if (c.lastDecision === 'CUT') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">▼ BAISSE (${c.lastChange})</span>`;
+            let decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">■ PAUSE (12 mois)</span>`;
+            if (c.lastDecision === 'HIKE') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-red-50 text-red-700 border border-red-200 shrink-0">▲ HAUSSE (${c.lastChange})${when}</span>`;
+            if (c.lastDecision === 'CUT') decisionBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">▼ BAISSE (${c.lastChange})${when}</span>`;
 
-            const perfColor = val => val.startsWith('+') ? 'text-emerald-600' : val.startsWith('-') ? 'text-rose-600' : 'text-slate-700';
+            const perfColor = val => String(val).startsWith('+') ? 'text-emerald-600' : String(val).startsWith('-') ? 'text-rose-600' : 'text-slate-700';
+            const warn = (c.warnings || []).length
+                ? `<p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-2">⚠ ${c.warnings.join(' • ')}</p>` : '';
 
             panel.innerHTML = `
                 <div class="border-b border-slate-200 pb-4">
@@ -220,6 +212,8 @@
                     </div>
                     <p class="text-xs sm:text-sm font-medium text-slate-700 mt-1">${c.bank}</p>
                     <p class="text-xs text-slate-500 mt-0.5">Gouverneur : <strong class="text-slate-700">${c.governor}</strong></p>
+                    ${warn}
+                    <p class="text-[10px] text-slate-400 mt-1">Données : taux ${c.rateAsOf || 'n.d.'} • inflation ${c.inflationAsOf || 'n.d.'}</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5 sm:gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
@@ -236,44 +230,35 @@
                 <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
                     <div class="p-3 sm:p-3.5 rounded-lg border border-slate-200 bg-slate-900 text-white">
                         <span class="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 block">Taux Réel (Ex-Post)</span>
-                        <span class="text-xl sm:text-2xl font-bold mt-0.5 block">${m.realRate > 0 ? '+' : ''}${m.realRate}%</span>
-                        <span class="text-[10px] text-slate-400">Nom. (${c.nominalRate}%) - CPI (${c.inflation}%)</span>
+                        <span class="text-xl sm:text-2xl font-bold mt-0.5 block">${pct(m.realRate, 2, true)}</span>
+                        <span class="text-[10px] text-slate-400">Nom. (${pct(c.nominalRate)}) - CPI (${pct(c.inflation)})</span>
                     </div>
                     <div class="p-3 sm:p-3.5 rounded-lg border border-slate-200 bg-white">
                         <span class="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 block">Taux Directeur</span>
-                        <span class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5 block">${c.nominalRate.toFixed(2)}%</span>
+                        <span class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5 block">${pct(c.nominalRate)}</span>
                         <span class="text-[10px] text-slate-500">Taux officiel</span>
                     </div>
                     <div class="p-3 rounded-lg border border-slate-200 bg-white">
                         <span class="text-[10px] sm:text-[11px] text-slate-400 block">Inflation (YoY)</span>
-                        <span class="text-base sm:text-lg font-bold text-slate-900">${c.inflation.toFixed(2)}%</span>
-                        <span class="text-[10px] text-slate-500 block">Cible : <strong>${c.target.toFixed(2)}%</strong></span>
+                        <span class="text-base sm:text-lg font-bold text-slate-900">${pct(c.inflation)}</span>
+                        <span class="text-[10px] text-slate-500 block">Cible : <strong>${pct(c.target)}</strong></span>
                     </div>
                     <div class="p-3 rounded-lg border border-slate-200 bg-white">
                         <span class="text-[10px] sm:text-[11px] text-slate-400 block">Inflation Gap</span>
-                        <span class="text-base sm:text-lg font-bold ${m.inflationGap > 0 ? 'text-amber-600' : 'text-blue-600'}">${m.inflationGap > 0 ? '+' : ''}${m.inflationGap.toFixed(2)}%</span>
-                        <span class="text-[10px] text-slate-500 block">${m.inflationGap > 0 ? 'Au-dessus cible' : 'Sous cible'}</span>
+                        <span class="text-base sm:text-lg font-bold ${m.inflationGap > 0 ? 'text-amber-600' : 'text-blue-600'}">${pct(m.inflationGap, 2, true)}</span>
+                        <span class="text-[10px] text-slate-500 block">${m.inflationGap == null ? 'n.d.' : m.inflationGap > 0 ? 'Au-dessus cible' : 'Sous cible'}</span>
                     </div>
                 </div>
 
                 <div class="border border-slate-200 rounded-lg p-3 bg-white">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-bold text-slate-700">Performance Spot ${c.currency} vs USD (Live)</span>
+                        <span class="text-xs font-bold text-slate-700">Performance Spot ${c.currency} vs USD</span>
                         <span class="text-[10px] text-slate-400">Var. %</span>
                     </div>
                     <div class="grid grid-cols-3 divide-x divide-slate-100 text-center">
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">1 Mois</span>
-                            <span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.m1)}">${c.fxPerf.m1}</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">6 Mois</span>
-                            <span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.m6)}">${c.fxPerf.m6}</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">1 An</span>
-                            <span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.y1)}">${c.fxPerf.y1}</span>
-                        </div>
+                        <div><span class="text-[10px] text-slate-400 block">1 Mois</span><span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.m1)}">${c.fxPerf.m1}</span></div>
+                        <div><span class="text-[10px] text-slate-400 block">6 Mois</span><span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.m6)}">${c.fxPerf.m6}</span></div>
+                        <div><span class="text-[10px] text-slate-400 block">1 An</span><span class="text-xs sm:text-sm font-bold ${perfColor(c.fxPerf.y1)}">${c.fxPerf.y1}</span></div>
                     </div>
                 </div>
 
@@ -284,8 +269,8 @@
             `;
 
             Plotly.newPlot('country-history-chart', [
-                { x: DATES_3Y, y: c.histRate, name: 'Taux Directeur', type: 'scatter', mode: 'lines', line: { color: '#0f172a', width: 2.5, shape: 'hv' } },
-                { x: DATES_3Y, y: c.histInf, name: 'Inflation (CPI)', type: 'scatter', mode: 'lines', line: { color: '#3b82f6', width: 2, dash: 'dot' } }
+                { x: DATES_3Y, y: c.histRate, name: 'Taux Directeur', type: 'scatter', mode: 'lines', connectgaps: true, line: { color: '#0f172a', width: 2.5, shape: 'hv' } },
+                { x: DATES_3Y, y: c.histInf, name: 'Inflation (CPI)', type: 'scatter', mode: 'lines', connectgaps: false, line: { color: '#3b82f6', width: 2, dash: 'dot' } }
             ], {
                 margin: { t: 10, r: 10, b: 28, l: 32 }, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 xaxis: { showgrid: false, tickfont: { size: 9, color: '#64748b' } },
@@ -308,9 +293,7 @@
         function toggleComparator() {
             const modal = document.getElementById('comparator-modal');
             modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                setTimeout(updateComparatorChart, 50);
-            }
+            if (!modal.classList.contains('hidden')) setTimeout(updateComparatorChart, 50);
         }
 
         function updateComparatorChart() {
@@ -318,18 +301,20 @@
             const c2 = CENTRAL_BANKS_DATA[document.getElementById('comp-country-2').value];
             if (!c1 || !c2) return;
 
-            const currentSpread = +(getMetrics(c1).realRate - getMetrics(c2).realRate).toFixed(2);
+            const r1 = getMetrics(c1).realRate, r2 = getMetrics(c2).realRate;
+            const currentSpread = (r1 == null || r2 == null) ? null : +(r1 - r2).toFixed(2);
             const badge = document.getElementById('comp-spread-badge');
-            badge.textContent = `${currentSpread > 0 ? '+' : ''}${currentSpread}%`;
-            badge.className = `text-base sm:text-lg font-bold ${currentSpread >= 0 ? 'text-blue-700' : 'text-rose-600'}`;
+            badge.textContent = pct(currentSpread, 2, true);
+            badge.className = `text-base sm:text-lg font-bold ${currentSpread == null ? 'text-slate-500' : currentSpread >= 0 ? 'text-blue-700' : 'text-rose-600'}`;
 
-            const histSpread = DATES_3Y.map((_, idx) => +((c1.histRate[idx] - c1.histInf[idx]) - (c2.histRate[idx] - c2.histInf[idx])).toFixed(2));
-            const baseSpot = +(c1.usdRate / c2.usdRate).toFixed(4);
-            const histSpot = histSpread.map(sp => +(baseSpot * (1 + (sp - currentSpread) * 0.025)).toFixed(4));
+            const real = (c, i) => (c.histRate[i] == null || c.histInf[i] == null) ? null : c.histRate[i] - c.histInf[i];
+            const histSpread = DATES_3Y.map((_, i) => { const a = real(c1, i), b = real(c2, i); return (a == null || b == null) ? null : +(a - b).toFixed(2); });
+            // Vrai taux de change croisé : (USD par c1) / (USD par c2)
+            const histSpot = DATES_3Y.map((_, i) => { const a = c1.histFx && c1.histFx[i], b = c2.histFx && c2.histFx[i]; return (a && b) ? +(a / b).toFixed(4) : null; });
 
             Plotly.newPlot('comparator-chart', [
                 { x: DATES_3Y, y: histSpread, name: `Spread (${c1.currency}-${c2.currency})`, type: 'bar', marker: { color: 'rgba(59, 130, 246, 0.25)', line: { color: '#3b82f6', width: 1 } }, yaxis: 'y' },
-                { x: DATES_3Y, y: histSpot, name: `Spot ${c1.currency}/${c2.currency}`, type: 'scatter', mode: 'lines+markers', line: { color: '#0f172a', width: 2.5 }, marker: { size: 4 }, yaxis: 'y2' }
+                { x: DATES_3Y, y: histSpot, name: `Spot ${c1.currency}/${c2.currency}`, type: 'scatter', mode: 'lines+markers', connectgaps: true, line: { color: '#0f172a', width: 2.5 }, marker: { size: 4 }, yaxis: 'y2' }
             ], {
                 margin: { t: 25, r: 45, b: 30, l: 42 }, paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff',
                 xaxis: { showgrid: false, tickfont: { size: 10, color: '#64748b' } },
@@ -345,7 +330,7 @@
                 const json = await response.json();
                 DATES_3Y = json.dates;
                 CENTRAL_BANKS_DATA = json.countries;
-                document.getElementById('last-updated-badge').textContent = 'Updated: ' + json.last_updated;
+                document.getElementById('last-updated-badge').textContent = 'Robot : ' + json.last_updated;
                 renderMap();
                 renderCountryPanel('USA');
                 initComparator();
