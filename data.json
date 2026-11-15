@@ -1,5 +1,5 @@
 {
-  "last_updated": "15 Nov 2026 - 15:30 UTC",
+  "last_updated": "15 Nov 2026 - 15:47 UTC",
   "dates": [
     "2024-12",
     "2025-01",
@@ -33,14 +33,17 @@
       "currency": "USD",
       "bank": "Federal Reserve (Fed)",
       "governor": "Jerome Powell",
+      "governorSource": "wikidata",
       "nominalRate": 4.0,
       "inflation": 3.72,
       "target": 2.0,
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-09",
-      "lastMeeting": "04 Nov 2026",
-      "nextMeeting": "16 Déc 2026",
+      "lastMeeting": "28 Oct 2026",
+      "nextMeeting": "09 Déc 2026",
+      "lastMeetingISO": "2026-10-28",
+      "nextMeetingISO": "2026-12-09",
       "fxPerf": {
         "m1": "0.0%",
         "m6": "0.0%",
@@ -131,7 +134,8 @@
         "rate": "fred",
         "cpi": "fred"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": []
     },
     "FRA": {
       "iso3": "FRA",
@@ -139,6 +143,7 @@
       "currency": "EUR",
       "bank": "Banque Centrale Européenne (BCE)",
       "governor": "Christine Lagarde",
+      "governorSource": "wikidata",
       "nominalRate": 2.5,
       "inflation": 3.77,
       "target": 2.0,
@@ -147,6 +152,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "29 Oct 2026",
       "nextMeeting": "17 Déc 2026",
+      "lastMeetingISO": "2026-10-29",
+      "nextMeetingISO": "2026-12-17",
       "fxPerf": {
         "m1": "-1.4%",
         "m6": "-5.2%",
@@ -237,7 +244,8 @@
         "rate": "fred",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": []
     },
     "GBR": {
       "iso3": "GBR",
@@ -245,6 +253,7 @@
       "currency": "GBP",
       "bank": "Bank of England (BoE)",
       "governor": "Andrew Bailey",
+      "governorSource": "wikidata",
       "nominalRate": 3.75,
       "inflation": 3.45,
       "target": 2.0,
@@ -253,6 +262,8 @@
       "lastChangeMonth": "2025-12",
       "lastMeeting": "05 Nov 2026",
       "nextMeeting": "17 Déc 2026",
+      "lastMeetingISO": "2026-11-05",
+      "nextMeetingISO": "2026-12-17",
       "fxPerf": {
         "m1": "-0.5%",
         "m6": "-1.3%",
@@ -343,7 +354,12 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [
+        "inflation : écart entre sources en 2025-03 (bis_cpi 2.63 vs fred 3.42)"
+      ],
+      "notes": [
+        "taux : source unique"
+      ]
     },
     "CAN": {
       "iso3": "CAN",
@@ -351,6 +367,7 @@
       "currency": "CAD",
       "bank": "Bank of Canada (BoC)",
       "governor": "Tiff Macklem",
+      "governorSource": "config",
       "nominalRate": 2.5,
       "inflation": 3.09,
       "target": 2.0,
@@ -359,6 +376,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "28 Oct 2026",
       "nextMeeting": "09 Déc 2026",
+      "lastMeetingISO": "2026-10-28",
+      "nextMeetingISO": "2026-12-09",
       "fxPerf": {
         "m1": "-0.5%",
         "m6": "-3.8%",
@@ -449,14 +468,18 @@
         "rate": "boc",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [
+        "taux : écart entre sources en 2026-10 (boc 2.25 vs bis_rate 2.50)"
+      ],
+      "notes": []
     },
     "BRA": {
       "iso3": "BRA",
       "name": "Brésil",
       "currency": "BRL",
       "bank": "Banco Central do Brasil (BCB)",
-      "governor": "Gabriel Galípolo",
+      "governor": "Roberto Campos Neto",
+      "governorSource": "wikidata",
       "nominalRate": 13.75,
       "inflation": 4.63,
       "target": 3.0,
@@ -465,6 +488,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "04 Nov 2026",
       "nextMeeting": "16 Déc 2026",
+      "lastMeetingISO": "2026-11-04",
+      "nextMeetingISO": "2026-12-16",
       "fxPerf": {
         "m1": "-10.9%",
         "m6": "-11.3%",
@@ -555,7 +580,8 @@
         "rate": "bcb",
         "cpi": "bcb"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": []
     },
     "MEX": {
       "iso3": "MEX",
@@ -563,6 +589,7 @@
       "currency": "MXN",
       "bank": "Banco de México (Banxico)",
       "governor": "Victoria Rodríguez Ceja",
+      "governorSource": "config",
       "nominalRate": 6.5,
       "inflation": 3.45,
       "target": 3.0,
@@ -571,6 +598,8 @@
       "lastChangeMonth": "2026-05",
       "lastMeeting": "12 Nov 2026",
       "nextMeeting": "17 Déc 2026",
+      "lastMeetingISO": "2026-11-12",
+      "nextMeetingISO": "2026-12-17",
       "fxPerf": {
         "m1": "-1.2%",
         "m6": "-7.3%",
@@ -661,7 +690,11 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": [
+        "taux : source unique",
+        "inflation : source unique"
+      ]
     },
     "IND": {
       "iso3": "IND",
@@ -669,6 +702,7 @@
       "currency": "INR",
       "bank": "Reserve Bank of India (RBI)",
       "governor": "Sanjay Malhotra",
+      "governorSource": "config",
       "nominalRate": 5.25,
       "inflation": 5.54,
       "target": 4.0,
@@ -677,6 +711,8 @@
       "lastChangeMonth": "2025-12",
       "lastMeeting": "09 Oct 2026",
       "nextMeeting": "04 Déc 2026",
+      "lastMeetingISO": "2026-10-09",
+      "nextMeetingISO": "2026-12-04",
       "fxPerf": {
         "m1": "+0.3%",
         "m6": "+1.6%",
@@ -767,7 +803,12 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [
+        "inflation : écart entre sources en 2025-03 (bis_cpi 3.56 vs fred 2.95)"
+      ],
+      "notes": [
+        "taux : source unique"
+      ]
     },
     "CHN": {
       "iso3": "CHN",
@@ -775,6 +816,7 @@
       "currency": "CNY",
       "bank": "People's Bank of China (PBoC)",
       "governor": "Pan Gongsheng",
+      "governorSource": "config",
       "nominalRate": 3.0,
       "inflation": 0.9,
       "target": 3.0,
@@ -783,6 +825,8 @@
       "lastChangeMonth": "2025-05",
       "lastMeeting": "20 Oct 2026",
       "nextMeeting": "20 Nov 2026",
+      "lastMeetingISO": "2026-10-20",
+      "nextMeetingISO": "2026-11-20",
       "fxPerf": {
         "m1": "+0.3%",
         "m6": "+1.7%",
@@ -873,7 +917,10 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": [
+        "taux : source unique"
+      ]
     },
     "JPN": {
       "iso3": "JPN",
@@ -881,6 +928,7 @@
       "currency": "JPY",
       "bank": "Bank of Japan (BoJ)",
       "governor": "Kazuo Ueda",
+      "governorSource": "wikidata",
       "nominalRate": 1.25,
       "inflation": 2.1,
       "target": 2.0,
@@ -889,6 +937,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "30 Oct 2026",
       "nextMeeting": "18 Déc 2026",
+      "lastMeetingISO": "2026-10-30",
+      "nextMeetingISO": "2026-12-18",
       "fxPerf": {
         "m1": "-1.0%",
         "m6": "-0.9%",
@@ -979,7 +1029,11 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": [
+        "taux : source unique",
+        "inflation : source unique"
+      ]
     },
     "AUS": {
       "iso3": "AUS",
@@ -987,6 +1041,7 @@
       "currency": "AUD",
       "bank": "Reserve Bank of Australia (RBA)",
       "governor": "Michele Bullock",
+      "governorSource": "wikidata",
       "nominalRate": 4.6,
       "inflation": 3.94,
       "target": 2.5,
@@ -995,6 +1050,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "03 Nov 2026",
       "nextMeeting": "08 Déc 2026",
+      "lastMeetingISO": "2026-11-03",
+      "nextMeetingISO": "2026-12-08",
       "fxPerf": {
         "m1": "-2.1%",
         "m6": "-6.1%",
@@ -1087,6 +1144,9 @@
       },
       "warnings": [
         "inflation périmée (dernière : 2026-06)"
+      ],
+      "notes": [
+        "taux : source unique"
       ]
     },
     "RUS": {
@@ -1094,7 +1154,8 @@
       "name": "Russie",
       "currency": "RUB",
       "bank": "Bank of Russia (CBR)",
-      "governor": "Elvira Nabiullina",
+      "governor": "Yury Kovalchuk",
+      "governorSource": "wikidata",
       "nominalRate": 14.0,
       "inflation": 6.36,
       "target": 4.0,
@@ -1103,6 +1164,8 @@
       "lastChangeMonth": "2026-07",
       "lastMeeting": "23 Oct 2026",
       "nextMeeting": "18 Déc 2026",
+      "lastMeetingISO": "2026-10-23",
+      "nextMeetingISO": "2026-12-18",
       "fxPerf": {
         "m1": "+1.8%",
         "m6": "-11.5%",
@@ -1193,14 +1256,19 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": [
+        "taux : source unique",
+        "inflation : source unique"
+      ]
     },
     "CHE": {
       "iso3": "CHE",
       "name": "Suisse",
       "currency": "CHF",
       "bank": "Banque Nationale Suisse (BNS)",
-      "governor": "Martin Schlegel",
+      "governor": "Thomas Jordan",
+      "governorSource": "wikidata",
       "nominalRate": 0.0,
       "inflation": 0.99,
       "target": 2.0,
@@ -1209,6 +1277,8 @@
       "lastChangeMonth": "2025-06",
       "lastMeeting": "24 Sep 2026",
       "nextMeeting": "10 Déc 2026",
+      "lastMeetingISO": "2026-09-24",
+      "nextMeetingISO": "2026-12-10",
       "fxPerf": {
         "m1": "-1.2%",
         "m6": "-6.4%",
@@ -1299,7 +1369,10 @@
         "rate": "bis_rate",
         "cpi": "bis_cpi"
       },
-      "warnings": []
+      "warnings": [],
+      "notes": [
+        "taux : source unique"
+      ]
     }
   }
 }
