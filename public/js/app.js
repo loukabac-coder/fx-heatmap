@@ -1,4 +1,4 @@
-// public/js/app.js
+// public/js/app.js (Version complète 100% compatible GitHub Pages)
 import {
   computeCrossRate,
   computeCross24hChange,
@@ -26,11 +26,15 @@ const STATE = {
 const fmtPct = (v, sign = false) =>
   v == null ? "n.d." : `${sign && v > 0 ? "+" : ""}${v.toFixed(2)}%`;
 
+const fmtBps = (v) =>
+  v == null ? "n.d." : `${v > 0 ? "+" : ""}${Math.round(v * 100)} bps`;
+
+// --- Chargement des données Static-First + Live Rates ---
 async function bootstrap() {
   try {
     const [snapRes, histRes] = await Promise.all([
-     fetch("./data/fx_macro_snapshot.json?t=" + Date.now()),
-     fetch("./data/fx_history.json?t=" + Date.now())
+      fetch("./data/fx_macro_snapshot.json?t=" + Date.now()),
+      fetch("./data/fx_history.json?t=" + Date.now())
     ]);
     const snapJson = await snapRes.json();
     const histJson = await histRes.json();
@@ -43,9 +47,10 @@ async function bootstrap() {
     renderAll();
     updateSyncBadge();
 
+    // Rafraîchissement asynchrone des cours spot en direct
     fetchLiveSpotRates();
   } catch (err) {
-    document.getElementById("sync-status").textContent = "En attente des données (lancer Actions)";
+    document.getElementById("sync-status").textContent = "Erreur chargement données";
     console.error(err);
   }
 }
@@ -61,17 +66,7 @@ async function fetchLiveSpotRates() {
           STATE.currencies[cur].usdRate = +(1.0 / unitsPerUsd).toFixed(6);
         }
       }
-      const timeStr = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-      STATE.liveStatus = `Spot Live ${timeStr}`;
-      updateSyncBadge();
-      renderComparator();
-      renderG10Matrix();
-    }
-  } catch {
-    // Repli silencieux sur le snapshot
-  }
-}
-      const timeStr = new Date(data.timestamp).toLocaleTimeString("fr-FR", {
+      const timeStr = new Date().toLocaleTimeString("fr-FR", {
         hour: "2-digit",
         minute: "2-digit"
       });
@@ -81,7 +76,7 @@ async function fetchLiveSpotRates() {
       renderG10Matrix();
     }
   } catch {
-    // Repli silencieux sur le snapshot CDN
+    // Repli silencieux sur le snapshot
   }
 }
 
