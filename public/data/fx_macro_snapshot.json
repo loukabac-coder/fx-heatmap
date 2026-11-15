@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastUpdatedUTC": "2026-11-15 17:22 UTC",
-    "timestamp": "2026-11-15T17:22:34.582612+00:00",
+    "lastUpdatedUTC": "2026-11-15 17:27 UTC",
+    "timestamp": "2026-11-15T17:27:13.658556+00:00",
     "currencyCount": 18,
     "historyMonths": 60
   },
@@ -26,8 +26,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-09",
-      "lastMeeting": "2026-10-28",
-      "nextMeeting": "2026-12-09",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 1.0,
       "chg24h": 0.0
     },
@@ -51,8 +51,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+15 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-10-29",
-      "nextMeeting": "2026-12-17",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 1.105021,
       "chg24h": -0.406
     },
@@ -76,8 +76,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-09",
-      "lastMeeting": "2026-10-30",
-      "nextMeeting": "2026-12-18",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.006255,
       "chg24h": -0.08
     },
@@ -101,8 +101,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-11-05",
-      "nextMeeting": "2026-12-17",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 1.321213,
       "chg24h": -0.145
     },
@@ -126,8 +126,8 @@
       "lastDecision": "CUT",
       "lastChange": "-25 bps",
       "lastChangeMonth": "2025-06",
-      "lastMeeting": "2026-09-24",
-      "nextMeeting": "2026-12-10",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 1.193033,
       "chg24h": -0.271
     },
@@ -151,8 +151,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-10-28",
-      "nextMeeting": "2026-12-09",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.700918,
       "chg24h": -0.042
     },
@@ -176,8 +176,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-11-03",
-      "nextMeeting": "2026-12-08",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.677415,
       "chg24h": -0.481
     },
@@ -204,7 +204,7 @@
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
       "usdRate": 0.552517,
-      "chg24h": 0.0
+      "chg24h": -0.354
     },
     "SEK": {
       "currency": "SEK",
@@ -276,8 +276,8 @@
       "lastDecision": "CUT",
       "lastChange": "-25 bps",
       "lastChangeMonth": "2026-09",
-      "lastMeeting": "2026-11-04",
-      "nextMeeting": "2026-12-16",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.176473,
       "chg24h": -0.457
     },
@@ -301,8 +301,8 @@
       "lastDecision": "CUT",
       "lastChange": "-25 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-11-12",
-      "nextMeeting": "2026-12-17",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.053987,
       "chg24h": 0.368
     },
@@ -426,8 +426,8 @@
       "lastDecision": "HIKE",
       "lastChange": "+25 bps",
       "lastChangeMonth": "2026-11",
-      "lastMeeting": "2026-10-09",
-      "nextMeeting": "2026-12-04",
+      "lastMeeting": "n.d.",
+      "nextMeeting": "n.d.",
       "usdRate": 0.010612,
       "chg24h": -0.207
     },
