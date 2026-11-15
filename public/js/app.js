@@ -1,4 +1,4 @@
-// public/js/app.js (Version complète 100% compatible GitHub Pages)
+// public/js/app.js
 import {
   computeCrossRate,
   computeCross24hChange,
@@ -7,19 +7,27 @@ import {
   getHeatmapStyle
 } from "./quant.js";
 import { renderPairHistoryChart, renderDrawerChart } from "./charts.js";
+import {
+  initOrUpdateGlobe,
+  focusGlobeRegion,
+  focusGlobeCurrency,
+  toggleGlobeSpin
+} from "./globe3d.js";
 
 const STATE = {
   currencies: {},
   history: { dates: [], series: {} },
   meta: {},
   liveStatus: "Snapshot",
+  activeTab: "globe",
+  globeMetric: "realRate",
   scope: "ALL",          // ALL | G10 | EM
-  metric: "realRate",    // realRate | nominalRate | headlineCpi | coreCpi | yield2Y
+  metric: "realRate",    // realRate | nominalRate | headlineCpi | coreCpi | inflationGap
   coreMode: false,       // true => Nominal - Core CPI
   sortBy: "desc",        // desc | asc | alpha | decision
   baseCur: "EUR",
   quoteCur: "USD",
-  spreadType: "real",    // real | nominal | y2
+  spreadType: "real",    // real | nominal
   rangeMonths: 60
 };
 
@@ -29,7 +37,7 @@ const fmtPct = (v, sign = false) =>
 const fmtBps = (v) =>
   v == null ? "n.d." : `${v > 0 ? "+" : ""}${Math.round(v * 100)} bps`;
 
-// --- Chargement des données Static-First + Live Rates ---
+// --- Chargement des données ---
 async function bootstrap() {
   try {
     const [snapRes, histRes] = await Promise.all([
@@ -39,15 +47,23 @@ async function bootstrap() {
     const snapJson = await snapRes.json();
     const histJson = await histRes.json();
 
+    // Enrichissement avec l'Inflation Gap (CPI - Cible) sur chaque devise
+    for (const c of Object.values(snapJson.currencies)) {
+      c.inflationGap =
+        c.headlineCpi != null && c.target != null
+          ? +(c.headlineCpi - c.target).toFixed(2)
+          : null;
+    }
+
     STATE.currencies = snapJson.currencies;
     STATE.meta = snapJson.meta;
     STATE.history = histJson;
 
     populatePairSelects();
+    renderGlobePills();
     renderAll();
     updateSyncBadge();
 
-    // Rafraîchissement asynchrone des cours spot en direct
     fetchLiveSpotRates();
   } catch (err) {
     document.getElementById("sync-status").textContent = "Erreur chargement données";
@@ -76,7 +92,7 @@ async function fetchLiveSpotRates() {
       renderG10Matrix();
     }
   } catch {
-    // Repli silencieux sur le snapshot
+    // Repli silencieux
   }
 }
 
@@ -84,11 +100,29 @@ function updateSyncBadge() {
   const el = document.getElementById("sync-status");
   el.innerHTML = `
     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-    <span>Synchronisé • ${STATE.liveStatus} • Macro : ${STATE.meta.lastUpdatedUTC || "OK"}</span>
+    <span>${STATE.liveStatus} • Macro : ${STATE.meta.lastUpdatedUTC || "OK"}</span>
   `;
 }
 
-// --- Extraction métrique active ---
+// --- Ruban de pilules sous le Globe (navigation rapide mobile) ---
+function renderGlobePills() {
+  const box = document.getElementById("globe-quick-pills");
+  if (!box) return;
+  box.innerHTML = Object.values(STATE.currencies)
+    .map(
+      c => `
+      <button data-focus-cur="${c.currency}"
+        class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0f172a] hover:bg-slate-800 border border-slate-800 text-xs font-mono text-slate-200 transition">
+        <span>${c.flag}</span>
+        <span class="font-bold">${c.currency}</span>
+        <span class="${c.realRateStd >= 0 ? "text-emerald-400" : "text-rose-400"}">${fmtPct(c.realRateStd, true)}</span>
+      </button>
+    `
+    )
+    .join("");
+}
+
+// --- Extraction métrique active (Grille Heatmap) ---
 function getActiveMetricValue(c) {
   if (STATE.metric === "realRate") {
     return STATE.coreMode ? c.realRateCore : c.realRateStd;
@@ -96,7 +130,7 @@ function getActiveMetricValue(c) {
   return c[STATE.metric];
 }
 
-// --- Rendu de la Heatmap ---
+// --- Rendu de la Grille Heatmap ---
 function renderHeatmap() {
   const grid = document.getElementById("heatmap-grid");
   let list = Object.values(STATE.currencies);
@@ -105,7 +139,6 @@ function renderHeatmap() {
     list = list.filter(c => c.group === STATE.scope);
   }
 
-  // Tri dynamique
   list.sort((a, b) => {
     if (STATE.sortBy === "alpha") return a.currency.localeCompare(b.currency);
     if (STATE.sortBy === "decision") {
@@ -117,7 +150,6 @@ function renderHeatmap() {
     return STATE.sortBy === "desc" ? vb - va : va - vb;
   });
 
-  // Auto-calibration des couleurs sur le périmètre affiché
   const validVals = list.map(getActiveMetricValue).filter(v => v != null);
   const minVal = validVals.length ? Math.min(...validVals) : 0;
   const maxVal = validVals.length ? Math.max(...validVals) : 5;
@@ -125,7 +157,7 @@ function renderHeatmap() {
   grid.innerHTML = list
     .map(c => {
       const val = getActiveMetricValue(c);
-      const style = getHeatmapStyle(val, minVal, maxVal, STATE.metric);
+      const style = getHeatmapStyle(val, minVal, maxVal, STATE.metric === "inflationGap" ? "headlineCpi" : STATE.metric);
 
       let badgeHtml = `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700">PAUSE</span>`;
       if (c.lastDecision === "HIKE") {
@@ -152,7 +184,7 @@ function renderHeatmap() {
 
           <div class="flex items-baseline justify-between pt-1">
             <span style="color:${style.text};" class="text-2xl font-mono font-bold tracking-tight">
-              ${fmtPct(val, STATE.metric === "realRate")}
+              ${fmtPct(val, STATE.metric === "realRate" || STATE.metric === "inflationGap")}
             </span>
             <span class="text-[10px] font-mono text-slate-400">
               CPI ${c.cpiAsOf || "n.d."}
@@ -162,7 +194,7 @@ function renderHeatmap() {
           <div class="grid grid-cols-3 gap-1 pt-2 border-t border-white/10 text-[10px] font-mono text-slate-300">
             <div><span class="text-slate-400 block">Nom.</span>${fmtPct(c.nominalRate)}</div>
             <div><span class="text-slate-400 block">CPI</span>${fmtPct(c.headlineCpi)}</div>
-            <div><span class="text-slate-400 block">2Y</span>${fmtPct(c.yield2Y)}</div>
+            <div><span class="text-slate-400 block">Gap</span>${fmtPct(c.inflationGap, true)}</div>
           </div>
         </button>
       `;
@@ -210,9 +242,9 @@ function openCountryDrawer(cur) {
         <span class="text-[10px] text-slate-400">Dernier : ${c.lastChange} (${c.lastChangeMonth || "Pause"})</span>
       </div>
       <div class="bg-[#0f172a] border border-slate-800 rounded-xl p-3">
-        <span class="text-[10px] font-mono uppercase text-slate-400 block">Rendement Souverain 2Y</span>
-        <span class="text-lg font-mono font-bold text-white mt-0.5 block">${fmtPct(c.yield2Y)}</span>
-        <span class="text-[10px] text-slate-400">Cible Inflation : ${fmtPct(c.target)}</span>
+        <span class="text-[10px] font-mono uppercase text-slate-400 block">Inflation Gap</span>
+        <span class="text-lg font-mono font-bold ${c.inflationGap > 0 ? "text-amber-400" : "text-sky-400"} mt-0.5 block">${fmtPct(c.inflationGap, true)}</span>
+        <span class="text-[10px] text-slate-400">Cible : ${fmtPct(c.target)}</span>
       </div>
     </div>
 
@@ -289,9 +321,7 @@ function renderComparator() {
   const realQuote = STATE.coreMode ? quote.realRateCore : quote.realRateStd;
   const realSpread = realBase != null && realQuote != null ? +(realBase - realQuote).toFixed(2) : null;
   const nomSpread = base.nominalRate != null && quote.nominalRate != null ? +(base.nominalRate - quote.nominalRate).toFixed(2) : null;
-  const y2Spread = base.yield2Y != null && quote.yield2Y != null ? +(base.yield2Y - quote.yield2Y).toFixed(2) : null;
 
-  // Mise à jour KPIs
   document.getElementById("kpi-pair-label").textContent = `${base.currency}/${quote.currency} SPOT`;
   document.getElementById("kpi-spot").textContent = spot != null ? spot.toFixed(dec) : "n.d.";
 
@@ -314,9 +344,6 @@ function renderComparator() {
   colorSpread(document.getElementById("kpi-nom-spread"), nomSpread);
   document.getElementById("kpi-nom-detail").textContent = `${fmtPct(base.nominalRate)} vs ${fmtPct(quote.nominalRate)}`;
 
-  colorSpread(document.getElementById("kpi-2y-spread"), y2Spread);
-
-  // Reconstruction historique aligné (60M) pour la paire croisée
   const hBase = STATE.history.series[base.currency];
   const hQuote = STATE.history.series[quote.currency];
   const allDates = STATE.history.dates;
@@ -338,11 +365,6 @@ function renderComparator() {
     hBase.rate[i] != null && hQuote.rate[i] != null ? +(hBase.rate[i] - hQuote.rate[i]).toFixed(2) : null
   );
 
-  const fullY2SpreadHist = allDates.map((_, i) =>
-    hBase.y2[i] != null && hQuote.y2[i] != null ? +(hBase.y2[i] - hQuote.y2[i]).toFixed(2) : null
-  );
-
-  // Calcul du Z-Score statistique sur 24M
   const quant = computeZScore24M(fullSpotHist, fullRealSpreadHist);
   const zEl = document.getElementById("kpi-zscore");
   zEl.textContent = quant.zScore != null ? `${quant.zScore > 0 ? "+" : ""}${quant.zScore.toFixed(2)} σ` : "n.d.";
@@ -351,20 +373,15 @@ function renderComparator() {
   }`;
   document.getElementById("kpi-zscore-signal").textContent = `${quant.signal} (R²=${quant.r2 ?? "--"})`;
 
-  // Découpage selon la période choisie (6M, 1A, 3A, 5A)
   const sliceStart = Math.max(0, allDates.length - STATE.rangeMonths);
   const datesSlice = allDates.slice(sliceStart);
   const spotSlice = fullSpotHist.slice(sliceStart);
 
-  let spreadSlice = fullRealSpreadHist.slice(sliceStart);
-  let spreadLabel = "Spread Taux Réel";
-  if (STATE.spreadType === "nominal") {
-    spreadSlice = fullNomSpreadHist.slice(sliceStart);
-    spreadLabel = "Spread Nominal";
-  } else if (STATE.spreadType === "y2") {
-    spreadSlice = fullY2SpreadHist.slice(sliceStart);
-    spreadLabel = "Spread 2Y";
-  }
+  const spreadSlice =
+    STATE.spreadType === "nominal"
+      ? fullNomSpreadHist.slice(sliceStart)
+      : fullRealSpreadHist.slice(sliceStart);
+  const spreadLabel = STATE.spreadType === "nominal" ? "Spread Nominal" : "Spread Taux Réel";
 
   renderPairHistoryChart(
     "pair-history-chart",
@@ -418,19 +435,23 @@ function renderG10Matrix() {
 
 // --- Navigation & Événements ---
 function switchTab(tabName) {
+  STATE.activeTab = tabName;
   document.querySelectorAll(".tab-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.tab === tabName);
     b.classList.toggle("text-slate-400", b.dataset.tab !== tabName);
   });
-  ["heatmap", "comparator", "matrix"].forEach(v => {
+  ["globe", "heatmap", "comparator", "matrix"].forEach(v => {
     document.getElementById(`view-${v}`).classList.toggle("hidden", v !== tabName);
   });
-  if (tabName === "comparator") {
+  if (tabName === "globe") {
+    setTimeout(() => initOrUpdateGlobe("globe-container", STATE.currencies, STATE.globeMetric, openCountryDrawer), 30);
+  } else if (tabName === "comparator") {
     setTimeout(renderComparator, 30);
   }
 }
 
 function renderAll() {
+  initOrUpdateGlobe("globe-container", STATE.currencies, STATE.globeMetric, openCountryDrawer);
   renderHeatmap();
   renderComparator();
   renderG10Matrix();
@@ -439,6 +460,33 @@ function renderAll() {
 document.addEventListener("click", (e) => {
   const tabBtn = e.target.closest(".tab-btn");
   if (tabBtn) switchTab(tabBtn.dataset.tab);
+
+  const globeMetricBtn = e.target.closest(".globe-metric-btn");
+  if (globeMetricBtn) {
+    STATE.globeMetric = globeMetricBtn.dataset.globeMetric;
+    document.querySelectorAll(".globe-metric-btn").forEach(b => {
+      b.classList.remove("active", "bg-sky-500/20", "text-sky-300");
+      b.classList.add("text-slate-400");
+    });
+    globeMetricBtn.classList.add("active", "bg-sky-500/20", "text-sky-300");
+    globeMetricBtn.classList.remove("text-slate-400");
+    initOrUpdateGlobe("globe-container", STATE.currencies, STATE.globeMetric, openCountryDrawer);
+  }
+
+  const camBtn = e.target.closest(".cam-btn");
+  if (camBtn) focusGlobeRegion(camBtn.dataset.cam);
+
+  const focusCurBtn = e.target.closest("[data-focus-cur]");
+  if (focusCurBtn) {
+    const cur = focusCurBtn.dataset.focusCur;
+    focusGlobeCurrency(cur);
+    openCountryDrawer(cur);
+  }
+
+  if (e.target.id === "btn-toggle-spin") {
+    const spinning = toggleGlobeSpin();
+    e.target.textContent = spinning ? "⏸ Pause" : "▶ Rotation";
+  }
 
   const scopeBtn = e.target.closest(".scope-btn");
   if (scopeBtn) {
