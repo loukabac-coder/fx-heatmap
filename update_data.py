@@ -1,268 +1,220 @@
-import csv
-import io
-import json
-import os
-from datetime import datetime
+import csv, io, json, os, sys, time
+from datetime import datetime, timedelta, timezone
 import requests
 import yfinance as yf
 
 FRED_API_KEY = os.environ.get("FRED_API_KEY")
+HEADERS = {"User-Agent": "Mozilla/5.0 (fx-heatmap-bot)"}
+N_MONTHS = 24
+MAX_CPI_AGE_MONTHS = 3  # au-delà, l'inflation est considérée périmée
 
-COUNTRIES_CONFIG = {
-    "USA": {
-        "name": "États-Unis", "currency": "USD", "bank": "Federal Reserve (Fed)",
-        "governor": "Jerome Powell", "target": 2.00,
-        "lastMeeting": "04 Nov 2026", "nextMeeting": "16 Déc 2026",
-        "rate_source": "fred", "rate_id": "DFEDTARU",
-        "cpi_source": "fred", "cpi_id": "CPIAUCSL", "yf_ticker": None
-    },
-    "FRA": {
-        "name": "Zone Euro", "currency": "EUR", "bank": "Banque Centrale Européenne (BCE)",
-        "governor": "Christine Lagarde", "target": 2.00,
-        "lastMeeting": "29 Oct 2026", "nextMeeting": "17 Déc 2026",
-        "rate_source": "fred", "rate_id": "ECBDFR",
-        "cpi_source": "fred", "cpi_id": "CP0000EZ19M086NEST", "yf_ticker": "EURUSD=X"
-    },
-    "GBR": {
-        "name": "Royaume-Uni", "currency": "GBP", "bank": "Bank of England (BoE)",
-        "governor": "Andrew Bailey", "target": 2.00,
-        "lastMeeting": "05 Nov 2026", "nextMeeting": "17 Déc 2026",
-        "rate_source": "bis", "rate_id": "GB",
-        "cpi_source": "fred", "cpi_id": "GBRCPIALLMINMEI", "yf_ticker": "GBPUSD=X"
-    },
-    "CAN": {
-        "name": "Canada", "currency": "CAD", "bank": "Bank of Canada (BoC)",
-        "governor": "Tiff Macklem", "target": 2.00,
-        "lastMeeting": "28 Oct 2026", "nextMeeting": "09 Déc 2026",
-        "rate_source": "boc", "rate_id": "V39079",
-        "cpi_source": "boc_cpi", "cpi_id": "STATIC_TOTALCPI_YOY", "yf_ticker": "CAD=X"
-    },
-    "BRA": {
-        "name": "Brésil", "currency": "BRL", "bank": "Banco Central do Brasil (BCB)",
-        "governor": "Gabriel Galípolo", "target": 3.00,
-        "lastMeeting": "04 Nov 2026", "nextMeeting": "16 Déc 2026",
-        "rate_source": "bcb", "rate_id": "432",
-        "cpi_source": "bcb_cpi", "cpi_id": "13522", "yf_ticker": "BRL=X"
-    },
-    "MEX": {
-        "name": "Mexique", "currency": "MXN", "bank": "Banco de México (Banxico)",
-        "governor": "Victoria Rodríguez Ceja", "target": 3.00,
-        "lastMeeting": "12 Nov 2026", "nextMeeting": "17 Déc 2026",
-        "rate_source": "bis", "rate_id": "MX",
-        "cpi_source": "fred", "cpi_id": "MEXCPIALLMINMEI", "yf_ticker": "MXN=X"
-    },
-    "IND": {
-        "name": "Inde", "currency": "INR", "bank": "Reserve Bank of India (RBI)",
-        "governor": "Sanjay Malhotra", "target": 4.00,
-        "lastMeeting": "09 Oct 2026", "nextMeeting": "04 Déc 2026",
-        "rate_source": "bis", "rate_id": "IN",
-        "cpi_source": "fred", "cpi_id": "INDCPIALLMINMEI", "yf_ticker": "INR=X"
-    },
-    "CHN": {
-        "name": "Chine", "currency": "CNY", "bank": "People's Bank of China (PBoC)",
-        "governor": "Pan Gongsheng", "target": 3.00,
-        "lastMeeting": "20 Oct 2026", "nextMeeting": "20 Nov 2026",
-        "rate_source": "bis", "rate_id": "CN",
-        "cpi_source": "fred", "cpi_id": "CHNCPIALLMINMEI", "yf_ticker": "CNY=X"
-    },
-    "JPN": {
-        "name": "Japon", "currency": "JPY", "bank": "Bank of Japan (BoJ)",
-        "governor": "Kazuo Ueda", "target": 2.00,
-        "lastMeeting": "30 Oct 2026", "nextMeeting": "18 Déc 2026",
-        "rate_source": "bis", "rate_id": "JP",
-        "cpi_source": "fred", "cpi_id": "JPNCPIALLMINMEI", "yf_ticker": "JPY=X"
-    },
-    "AUS": {
-        "name": "Australie", "currency": "AUD", "bank": "Reserve Bank of Australia (RBA)",
-        "governor": "Michele Bullock", "target": 2.50,
-        "lastMeeting": "03 Nov 2026", "nextMeeting": "08 Déc 2026",
-        "rate_source": "bis", "rate_id": "AU",
-        "cpi_source": "fred", "cpi_id": "AUSCPIALLQINMEI", "yf_ticker": "AUDUSD=X"
-    },
-    "RUS": {
-        "name": "Russie", "currency": "RUB", "bank": "Bank of Russia (CBR)",
-        "governor": "Elvira Nabiullina", "target": 4.00,
-        "lastMeeting": "23 Oct 2026", "nextMeeting": "18 Déc 2026",
-        "rate_source": "bis", "rate_id": "RU",
-        "cpi_source": "fred", "cpi_id": "RUSCPIALLMINMEI", "yf_ticker": "RUB=X"
-    },
-    "CHE": {
-        "name": "Suisse", "currency": "CHF", "bank": "Banque Nationale Suisse (BNS)",
-        "governor": "Martin Schlegel", "target": 2.00,
-        "lastMeeting": "24 Sep 2026", "nextMeeting": "10 Déc 2026",
-        "rate_source": "bis", "rate_id": "CH",
-        "cpi_source": "fred", "cpi_id": "CHECPIALLMINMEI", "yf_ticker": "CHF=X"
-    }
+# ---------- Config : chaque pays a une LISTE de sources (la 1re valide gagne) ----------
+# rate : (source, id)      cpi : (source, id, "yoy"|"index")
+C = {
+ "USA": dict(name="États-Unis", cur="USD", bank="Federal Reserve (Fed)", gov="Jerome Powell", target=2.0,
+   last="04 Nov 2026", next="16 Déc 2026", fx=None,
+   rate=[("fred","DFEDTARU"),("bis_rate","US")], cpi=[("fred","CPIAUCSL","index"),("bis_cpi","US","yoy")]),
+ "FRA": dict(name="Zone Euro", cur="EUR", bank="Banque Centrale Européenne (BCE)", gov="Christine Lagarde", target=2.0,
+   last="29 Oct 2026", next="17 Déc 2026", fx="EURUSD=X",
+   rate=[("fred","ECBDFR"),("bis_rate","XM")], cpi=[("bis_cpi","XM","yoy"),("fred","CP0000EZ19M086NEST","index")]),
+ "GBR": dict(name="Royaume-Uni", cur="GBP", bank="Bank of England (BoE)", gov="Andrew Bailey", target=2.0,
+   last="05 Nov 2026", next="17 Déc 2026", fx="GBPUSD=X",
+   rate=[("bis_rate","GB")], cpi=[("bis_cpi","GB","yoy"),("fred","GBRCPIALLMINMEI","index")]),
+ "CAN": dict(name="Canada", cur="CAD", bank="Bank of Canada (BoC)", gov="Tiff Macklem", target=2.0,
+   last="28 Oct 2026", next="09 Déc 2026", fx="CAD=X",
+   rate=[("boc","V39079"),("bis_rate","CA")], cpi=[("bis_cpi","CA","yoy"),("fred","CANCPIALLMINMEI","index")]),
+ "BRA": dict(name="Brésil", cur="BRL", bank="Banco Central do Brasil (BCB)", gov="Gabriel Galípolo", target=3.0,
+   last="04 Nov 2026", next="16 Déc 2026", fx="BRL=X",
+   rate=[("bcb","432"),("bis_rate","BR")], cpi=[("bcb","13522","yoy"),("bis_cpi","BR","yoy")]),
+ "MEX": dict(name="Mexique", cur="MXN", bank="Banco de México (Banxico)", gov="Victoria Rodríguez Ceja", target=3.0,
+   last="12 Nov 2026", next="17 Déc 2026", fx="MXN=X",
+   rate=[("bis_rate","MX")], cpi=[("bis_cpi","MX","yoy"),("fred","MEXCPIALLMINMEI","index")]),
+ "IND": dict(name="Inde", cur="INR", bank="Reserve Bank of India (RBI)", gov="Sanjay Malhotra", target=4.0,
+   last="09 Oct 2026", next="04 Déc 2026", fx="INR=X",
+   rate=[("bis_rate","IN")], cpi=[("bis_cpi","IN","yoy"),("fred","INDCPIALLMINMEI","index")]),
+ "CHN": dict(name="Chine", cur="CNY", bank="People's Bank of China (PBoC)", gov="Pan Gongsheng", target=3.0,
+   last="20 Oct 2026", next="20 Nov 2026", fx="CNY=X",
+   rate=[("bis_rate","CN")], cpi=[("bis_cpi","CN","yoy"),("fred","CHNCPIALLMINMEI","index")]),
+ "JPN": dict(name="Japon", cur="JPY", bank="Bank of Japan (BoJ)", gov="Kazuo Ueda", target=2.0,
+   last="30 Oct 2026", next="18 Déc 2026", fx="JPY=X",
+   rate=[("bis_rate","JP")], cpi=[("bis_cpi","JP","yoy"),("fred","JPNCPIALLMINMEI","index")]),
+ "AUS": dict(name="Australie", cur="AUD", bank="Reserve Bank of Australia (RBA)", gov="Michele Bullock", target=2.5,
+   last="03 Nov 2026", next="08 Déc 2026", fx="AUDUSD=X",
+   rate=[("bis_rate","AU")], cpi=[("bis_cpi","AU","yoy"),("fred","AUSCPIALLQINMEI","index")]),
+ "RUS": dict(name="Russie", cur="RUB", bank="Bank of Russia (CBR)", gov="Elvira Nabiullina", target=4.0,
+   last="23 Oct 2026", next="18 Déc 2026", fx="RUB=X",
+   rate=[("bis_rate","RU")], cpi=[("bis_cpi","RU","yoy"),("fred","RUSCPIALLMINMEI","index")]),
+ "CHE": dict(name="Suisse", cur="CHF", bank="Banque Nationale Suisse (BNS)", gov="Martin Schlegel", target=2.0,
+   last="24 Sep 2026", next="10 Déc 2026", fx="CHF=X",
+   rate=[("bis_rate","CH")], cpi=[("bis_cpi","CH","yoy"),("fred","CHECPIALLMINMEI","index")]),
 }
 
-def fetch_fred_monthly(series_id, limit=1200):
-    url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_API_KEY}&file_type=json&sort_order=desc&limit={limit}"
+# ---------- Utilitaires ----------
+def get(url, js=False, tries=3):
+    for i in range(tries):
+        try:
+            r = requests.get(url, timeout=25, headers=HEADERS)
+            r.raise_for_status()
+            return r.json() if js else r.text
+        except Exception as e:
+            print(f"   ! {url[:90]}… essai {i+1}/{tries}: {e}")
+            time.sleep(2 * (i + 1))
+    return None
+
+def month_list(n):
+    t = datetime.now(timezone.utc); y, m = t.year, t.month; out = []
+    for _ in range(n):
+        out.append(f"{y}-{m:02d}"); m -= 1
+        if m == 0: y, m = y - 1, 12
+    return out[::-1]
+
+def mnum(ym): return int(ym[:4]) * 12 + int(ym[5:7])
+def age_months(ym): return mnum(month_list(1)[0]) - mnum(ym)
+
+# ---------- Sources (retournent {"YYYY-MM": valeur}, {} si échec) ----------
+def src_fred(sid):
+    start = (datetime.now(timezone.utc) - timedelta(days=1200)).strftime("%Y-%m-%d")
+    j = get(f"https://api.stlouisfed.org/fred/series/observations?series_id={sid}&api_key={FRED_API_KEY}"
+            f"&file_type=json&observation_start={start}", js=True)
+    if not j: return {}
+    obs = sorted(j.get("observations", []), key=lambda o: o["date"])
+    return {o["date"][:7]: float(o["value"]) for o in obs if o["value"] not in (".", "", None)}
+
+def src_boc(sid):
+    j = get(f"https://www.bankofcanada.ca/valet/observations/{sid}/json?recent=1000", js=True)
+    if not j: return {}
+    out = {}
+    for o in j.get("observations", []):
+        v = o.get(sid, {}).get("v")
+        if v not in (None, ""): out[o["d"][:7]] = float(v)
+    return out
+
+def src_bcb(sid):
+    start = (datetime.now(timezone.utc) - timedelta(days=1200)).strftime("%d/%m/%Y")
+    j = get(f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{sid}/dados?formato=json&dataInicial={start}", js=True)
+    if not j: return {}
+    out = {}
+    for o in j:
+        d, m, y = o["data"].split("/")
+        out[f"{y}-{m}"] = float(o["valor"])
+    return out
+
+def _bis(flow, key, unit=None):
+    txt = get(f"https://stats.bis.org/api/v1/data/{flow}/{key}?startPeriod=2023-06&format=csv")
+    if not txt: return {}
+    out = {}
+    for row in csv.DictReader(io.StringIO(txt)):
+        if unit and row.get("UNIT_MEASURE") not in (None, unit): continue
+        ym, v = (row.get("TIME_PERIOD") or "")[:7], row.get("OBS_VALUE")
+        if ym and v not in (None, ""): out[ym] = float(v)
+    return out
+
+def src_bis_rate(cc): return _bis("WS_CBPOL", f"M.{cc}")
+def src_bis_cpi(cc):  return _bis("WS_LONG_CPI", f"M.{cc}", unit="628")  # 628 = variation annuelle en %
+
+SRC = {"fred": src_fred, "boc": src_boc, "bcb": src_bcb, "bis_rate": src_bis_rate, "bis_cpi": src_bis_cpi}
+
+def to_yoy(series, kind):
+    if kind == "yoy": return series
+    out = {}
+    for ym, v in series.items():
+        prev = f"{int(ym[:4]) - 1}-{ym[5:7]}"
+        if prev in series and series[prev]: out[ym] = round((v / series[prev] - 1) * 100, 2)
+    return out
+
+# ---------- FX réel (plus de courbe inventée) ----------
+def get_fx(ticker, months):
+    if not ticker: return 1.0, {"m1": "0.0%", "m6": "0.0%", "y1": "0.0%"}, [1.0] * len(months)
     try:
-        r = requests.get(url, timeout=15).json()
-        obs = [o for o in r.get("observations", []) if o.get("value") not in (".", None, "")]
-        obs.reverse()
-        return {o["date"][:7]: float(o["value"]) for o in obs}
+        d = yf.Ticker(ticker).history(period="3y")["Close"].dropna()
+        conv = (lambda p: p) if ticker.endswith("USD=X") else (lambda p: 1.0 / p)
+        spot = conv(float(d.iloc[-1]))
+        def ago(days):
+            s = d.loc[:d.index[-1] - timedelta(days=days)]
+            return conv(float(s.iloc[-1])) if len(s) else None
+        perf = lambda p: f"{(spot / p - 1) * 100:+.1f}%" if p else "n.d."
+        monthly = d.groupby(d.index.strftime("%Y-%m")).last()
+        hist = [round(conv(float(monthly[m])), 5) if m in monthly.index else None for m in months]
+        return round(spot, 5), {"m1": perf(ago(30)), "m6": perf(ago(182)), "y1": perf(ago(365))}, hist
     except Exception as e:
-        print(f"Erreur FRED {series_id}: {e}")
-        return {}
+        print(f"   ! FX {ticker}: {e}")
+        return None, {"m1": "n.d.", "m6": "n.d.", "y1": "n.d."}, [None] * len(months)
 
-def fetch_boc_monthly(series_id):
-    url = f"https://www.bankofcanada.ca/valet/observations/{series_id}/json?recent=800"
-    try:
-        r = requests.get(url, timeout=15).json()
-        monthly = {}
-        for o in r.get("observations", []):
-            val = o.get(series_id, {}).get("v")
-            if val not in (None, ""):
-                monthly[o["d"][:7]] = float(val)
-        return monthly
-    except Exception as e:
-        print(f"Erreur BoC {series_id}: {e}")
-        return {}
-
-def fetch_bcb_monthly(series_id):
-    url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{series_id}/dados/ultimos/800?formato=json"
-    try:
-        r = requests.get(url, timeout=15).json()
-        monthly = {}
-        for o in r:
-            parts = o["data"].split("/")  # DD/MM/YYYY
-            ym = f"{parts[2]}-{parts[1]}"
-            monthly[ym] = float(o["valor"])
-        return monthly
-    except Exception as e:
-        print(f"Erreur BCB {series_id}: {e}")
-        return {}
-
-def fetch_bis_monthly(country_code):
-    url = f"https://stats.bis.org/api/v1/data/WS_CBPOL/M.{country_code}?startPeriod=2023-01&format=csv"
-    try:
-        r = requests.get(url, timeout=15)
-        reader = csv.DictReader(io.StringIO(r.text))
-        monthly = {}
-        for row in reader:
-            ym = row.get("TIME_PERIOD", "")[:7]
-            val = row.get("OBS_VALUE", "")
-            if ym and val:
-                monthly[ym] = float(val)
-        return monthly
-    except Exception as e:
-        print(f"Erreur BIS {country_code}: {e}")
-        return {}
-
-def get_fx_metrics(ticker):
-    if not ticker:
-        return 1.0, {"m1": "0.0%", "m6": "0.0%", "y1": "0.0%"}
-    try:
-        hist = yf.Ticker(ticker).history(period="1y")["Close"].dropna()
-        current = float(hist.iloc[-1])
-        invert = not ticker.endswith("USD=X")
-        spot_usd = (1.0 / current) if invert else current
-
-        def calc_perf(days_ago):
-            idx = max(0, len(hist) - days_ago)
-            past = float(hist.iloc[idx])
-            past_usd = (1.0 / past) if invert else past
-            pct = ((spot_usd - past_usd) / past_usd) * 100
-            return f"{pct:+.1f}%"
-
-        return round(spot_usd, 5), {
-            "m1": calc_perf(22),
-            "m6": calc_perf(126),
-            "y1": calc_perf(250)
-        }
-    except Exception:
-        return 1.0, {"m1": "N/A", "m6": "N/A", "y1": "N/A"}
-
+# ---------- Main ----------
 def main():
-    us_cpi = fetch_fred_monthly("CPIAUCSL", limit=60)
-    target_months = sorted(us_cpi.keys())[-24:]
+    months = month_list(N_MONTHS)
+    out = {"last_updated": datetime.now(timezone.utc).strftime("%d %b %Y - %H:%M UTC"), "dates": months, "countries": {}}
 
-    output = {
-        "last_updated": datetime.utcnow().strftime("%d %b %Y - %H:%M UTC"),
-        "dates": target_months,
-        "countries": {}
-    }
+    for iso, c in C.items():
+        print(f"== {iso}")
+        warn = []
 
-    for iso, cfg in COUNTRIES_CONFIG.items():
-        print(f"Récupération officielle {iso}...")
-        # 1. Taux directeur
-        if cfg["rate_source"] == "fred":
-            rate_map = fetch_fred_monthly(cfg["rate_id"])
-        elif cfg["rate_source"] == "boc":
-            rate_map = fetch_boc_monthly(cfg["rate_id"])
-        elif cfg["rate_source"] == "bcb":
-            rate_map = fetch_bcb_monthly(cfg["rate_id"])
-        else:
-            rate_map = fetch_bis_monthly(cfg["rate_id"])
-
+        # Taux directeur : 1re source qui répond
+        rate_map, rate_src = {}, None
+        for s, sid in c["rate"]:
+            rate_map = SRC[s](sid)
+            if rate_map: rate_src = s; break
         if not rate_map:
-            print(f"Ignoré (pas de taux): {iso}")
-            continue
+            print(f"   ✗ {iso} ignoré : aucun taux récupéré"); continue
+        first = min(rate_map); last_known = None; hist_rate = []
+        for ym in months:
+            if ym in rate_map: last_known = round(rate_map[ym], 2)
+            elif mnum(ym) < mnum(first): last_known = None
+            hist_rate.append(last_known)
+        rate_asof = max(rate_map)
+        if age_months(rate_asof) > 3: warn.append(f"taux : dernière donnée {rate_asof}")
 
-        # 2. Inflation
-        is_direct_yoy = cfg["cpi_source"] in ("boc_cpi", "bcb_cpi")
-        if cfg["cpi_source"] == "boc_cpi":
-            cpi_map = fetch_boc_monthly(cfg["cpi_id"])
-        elif cfg["cpi_source"] == "bcb_cpi":
-            cpi_map = fetch_bcb_monthly(cfg["cpi_id"])
+        # Inflation : 1re source FRAÎCHE, sinon la moins périmée (signalée)
+        best = None
+        for s, sid, kind in c["cpi"]:
+            yoy = to_yoy(SRC[s](sid), kind)
+            if not yoy: continue
+            asof = max(yoy)
+            if best is None or asof > best[1]: best = (yoy, asof, s)
+            if age_months(asof) <= MAX_CPI_AGE_MONTHS: break
+        if best:
+            yoy, inf_asof, inf_src = best
+            hist_inf = [round(yoy[m], 2) if m in yoy else None for m in months]  # PAS de remplissage
+            if age_months(inf_asof) > MAX_CPI_AGE_MONTHS: warn.append(f"inflation périmée (dernière : {inf_asof})")
+            tail = [v for v in hist_inf if v is not None][-6:]
+            if len(tail) == 6 and len(set(tail)) == 1: warn.append("inflation suspecte (6 valeurs identiques)")
         else:
-            cpi_map = fetch_fred_monthly(cfg["cpi_id"], limit=60)
+            hist_inf, inf_asof, inf_src = [None] * len(months), None, None
+            warn.append("inflation indisponible")
+        known = [v for v in hist_inf if v is not None]
+        inflation = known[-1] if known else None
 
-        hist_rate, hist_inf = [], []
-        last_rate = round(rate_map[sorted(rate_map.keys())[0]], 2)
-        last_inf = 2.0
+        # Dernière décision RÉELLE (dernier changement dans l'historique)
+        decision, change, change_m = "HOLD", "0 bps", None
+        for i in range(len(hist_rate) - 1, 0, -1):
+            if hist_rate[i] is not None and hist_rate[i - 1] is not None and hist_rate[i] != hist_rate[i - 1]:
+                bps = round((hist_rate[i] - hist_rate[i - 1]) * 100)
+                decision = "HIKE" if bps > 0 else "CUT"
+                change = f"{bps:+d} bps"
+                change_m = months[i]
+                break
 
-        for ym in target_months:
-            if ym in rate_map:
-                last_rate = round(rate_map[ym], 2)
-            hist_rate.append(last_rate)
+        spot, perf, hist_fx = get_fx(c["fx"], months)
+        if warn: print("   ⚠", " | ".join(warn))
 
-            if is_direct_yoy:
-                if ym in cpi_map:
-                    last_inf = round(cpi_map[ym], 2)
-            else:
-                year, month = map(int, ym.split("-"))
-                prev_ym = f"{year - 1}-{month:02d}"
-                if ym in cpi_map and prev_ym in cpi_map and cpi_map[prev_ym] != 0:
-                    last_inf = round(((cpi_map[ym] - cpi_map[prev_ym]) / cpi_map[prev_ym]) * 100, 2)
-            hist_inf.append(last_inf)
-
-        nom_rate = hist_rate[-1]
-        prev_rate = hist_rate[-2] if len(hist_rate) > 1 else nom_rate
-        diff_bps = round((nom_rate - prev_rate) * 100)
-
-        if diff_bps > 0:
-            decision, change_str = "HIKE", f"+{diff_bps} bps"
-        elif diff_bps < 0:
-            decision, change_str = "CUT", f"{diff_bps} bps"
-        else:
-            decision, change_str = "HOLD", "0 bps"
-
-        spot_usd, fx_perf = get_fx_metrics(cfg["yf_ticker"])
-
-        output["countries"][iso] = {
-            "iso3": iso,
-            "name": cfg["name"],
-            "currency": cfg["currency"],
-            "bank": cfg["bank"],
-            "governor": cfg["governor"],
-            "nominalRate": nom_rate,
-            "inflation": hist_inf[-1],
-            "target": cfg["target"],
-            "lastDecision": decision,
-            "lastChange": change_str,
-            "lastMeeting": cfg["lastMeeting"],
-            "nextMeeting": cfg["nextMeeting"],
-            "fxPerf": fx_perf,
-            "usdRate": spot_usd,
-            "histRate": hist_rate,
-            "histInf": hist_inf
+        out["countries"][iso] = {
+            "iso3": iso, "name": c["name"], "currency": c["cur"], "bank": c["bank"], "governor": c["gov"],
+            "nominalRate": hist_rate[-1], "inflation": inflation, "target": c["target"],
+            "lastDecision": decision, "lastChange": change, "lastChangeMonth": change_m,
+            "lastMeeting": c["last"], "nextMeeting": c["next"],
+            "fxPerf": perf, "usdRate": spot, "histRate": hist_rate, "histInf": hist_inf, "histFx": hist_fx,
+            "rateAsOf": rate_asof, "inflationAsOf": inf_asof, "sources": {"rate": rate_src, "cpi": inf_src},
+            "warnings": warn,
         }
+
+    # Garde-fou : ne jamais écraser un bon data.json avec un mauvais
+    if "USA" not in out["countries"] or len(out["countries"]) < 10:
+        print("✗ Trop de pays manquants : data.json NON écrasé."); sys.exit(1)
 
     with open("data.json", "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-    print("Terminé avec les sources officielles !")
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    bad = [k for k, v in out["countries"].items() if v["warnings"]]
+    print(f"✓ data.json écrit ({len(out['countries'])} pays). Pays avec avertissements : {bad or 'aucun'}")
 
 if __name__ == "__main__":
     main()
