@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastUpdatedUTC": "2026-11-15 17:27 UTC",
-    "timestamp": "2026-11-15T17:27:13.658556+00:00",
+    "lastUpdatedUTC": "2026-11-15 20:14 UTC",
+    "timestamp": "2026-11-15T20:14:56.624812+00:00",
     "currencyCount": 18,
     "historyMonths": 60
   },
@@ -38,23 +38,23 @@
       "name": "Zone Euro",
       "flag": "🇪🇺",
       "bank": "Banque Centrale Européenne (BCE)",
-      "rateLabel": "Taux Facilité de Dépôt",
+      "rateLabel": "Deposit Facility Rate",
       "governor": "Christine Lagarde",
       "target": 2.0,
-      "nominalRate": 2.65,
+      "nominalRate": 2.5,
       "headlineCpi": 4.0,
       "coreCpi": 2.5,
-      "realRateStd": -1.35,
-      "realRateCore": 0.15,
+      "realRateStd": -1.5,
+      "realRateCore": 0.0,
       "yield2Y": 3.22,
       "cpiAsOf": "2026-10",
       "lastDecision": "HIKE",
-      "lastChange": "+15 bps",
-      "lastChangeMonth": "2026-11",
+      "lastChange": "+25 bps",
+      "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.105021,
-      "chg24h": -0.406
+      "usdRate": 1.103144,
+      "chg24h": -0.17
     },
     "JPY": {
       "currency": "JPY",
@@ -78,8 +78,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.006255,
-      "chg24h": -0.08
+      "usdRate": 0.006268,
+      "chg24h": 0.208
     },
     "GBP": {
       "currency": "GBP",
@@ -103,8 +103,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.321213,
-      "chg24h": -0.145
+      "usdRate": 1.322262,
+      "chg24h": -0.066
     },
     "CHF": {
       "currency": "CHF",
@@ -128,8 +128,8 @@
       "lastChangeMonth": "2025-06",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.193033,
-      "chg24h": -0.271
+      "usdRate": 1.193175,
+      "chg24h": -0.259
     },
     "CAD": {
       "currency": "CAD",
@@ -139,7 +139,7 @@
       "flag": "🇨🇦",
       "bank": "Bank of Canada (BoC)",
       "rateLabel": "Target Overnight Rate",
-      "governor": "Tiff Macklem",
+      "governor": "Fabio Panetta",
       "target": 2.0,
       "nominalRate": 2.5,
       "headlineCpi": 3.1,
@@ -178,8 +178,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.677415,
-      "chg24h": -0.481
+      "usdRate": 0.677736,
+      "chg24h": -0.434
     },
     "NZD": {
       "currency": "NZD",
@@ -189,7 +189,7 @@
       "flag": "🇳🇿",
       "bank": "Reserve Bank of New Zealand (RBNZ)",
       "rateLabel": "Official Cash Rate (OCR)",
-      "governor": "Adrian Orr",
+      "governor": "Christian Hawkesby",
       "target": 2.0,
       "nominalRate": 2.75,
       "headlineCpi": 3.7,
@@ -203,8 +203,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.552517,
-      "chg24h": -0.354
+      "usdRate": 0.553955,
+      "chg24h": -0.095
     },
     "SEK": {
       "currency": "SEK",
@@ -228,8 +228,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.099276,
-      "chg24h": -0.413
+      "usdRate": 0.099538,
+      "chg24h": -0.15
     },
     "NOK": {
       "currency": "NOK",
@@ -278,8 +278,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.176473,
-      "chg24h": -0.457
+      "usdRate": 0.17728,
+      "chg24h": -0.002
     },
     "MXN": {
       "currency": "MXN",
@@ -303,8 +303,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.053987,
-      "chg24h": 0.368
+      "usdRate": 0.053996,
+      "chg24h": 0.385
     },
     "ZAR": {
       "currency": "ZAR",
@@ -328,8 +328,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.059091,
-      "chg24h": -0.974
+      "usdRate": 0.059058,
+      "chg24h": -1.029
     },
     "PLN": {
       "currency": "PLN",
@@ -353,8 +353,8 @@
       "lastChangeMonth": "2026-03",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.250363,
-      "chg24h": -0.262
+      "usdRate": 0.250564,
+      "chg24h": -0.182
     },
     "CZK": {
       "currency": "CZK",
@@ -378,8 +378,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.045202,
-      "chg24h": -0.375
+      "usdRate": 0.04523,
+      "chg24h": -0.313
     },
     "HUF": {
       "currency": "HUF",
