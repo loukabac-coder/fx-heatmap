@@ -2,80 +2,128 @@
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FX & Macro Terminal | Global Monetary Policy, Real Rates & Cross Matrix</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>FX & Macro Terminal | Global Monetary Policy, 3D Globe & Cross Matrix</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text x='50' y='68' font-size='55' font-family='monospace' font-weight='bold' fill='white' text-anchor='middle'>FX</text></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://unpkg.com/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/terminal.css" />
 </head>
-<body class="bg-[#080c14] text-slate-100 antialiased selection:bg-sky-500/30 selection:text-sky-200">
+<body class="bg-[#060911] text-slate-100 antialiased selection:bg-sky-500/30 selection:text-sky-200 overflow-x-hidden">
 
-  <!-- TOP INSTITUTIONAL HEADER -->
-  <header class="sticky top-0 z-30 bg-[#0b111e]/95 backdrop-blur border-b border-slate-800/80 px-4 lg:px-6 py-3">
-    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-      <!-- Brand & Live Sync Status -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center font-mono font-bold text-sm text-white shadow-lg shadow-sky-500/20">
-          FX
-        </div>
-        <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">
-              GLOBAL MONETARY POLICY & REAL RATES TERMINAL
-            </h1>
-            <span id="sync-status" class="inline-flex items-center gap-1.5 text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Initialisation...
-            </span>
+  <!-- HEADER -->
+  <header class="sticky top-0 z-30 bg-[#090e1a]/95 backdrop-blur border-b border-slate-800/80 px-3 sm:px-6 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center font-mono font-bold text-xs sm:text-sm text-white shadow-lg shadow-sky-500/20 shrink-0">
+            FX
           </div>
-          <p class="text-[11px] text-slate-400">
-            G10 & Key Emerging Markets • Taux Directeurs Réels, Anticipations 2Y & Matrice FX Croisée
-          </p>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-xs sm:text-base font-bold tracking-tight text-white">
+                GLOBAL MONETARY POLICY & REAL RATES
+              </h1>
+              <span id="sync-status" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Initialisation...
+              </span>
+            </div>
+            <p class="hidden sm:block text-[11px] text-slate-400">
+              G10 & Key Emerging Markets • Globe 3D Macro, Taux Directeurs Réels & Matrice FX Croisée
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-1.5 bg-[#111827] p-1 rounded-lg border border-slate-800 self-start xl:self-auto">
-        <button data-tab="heatmap" class="tab-btn active px-3 py-1.5 rounded-md text-xs font-semibold transition">
-          Heatmap Politique Monétaire
+      <!-- Navigation Tabs (Scrollable horizontalement sur mobile) -->
+      <nav class="flex items-center gap-1 bg-[#0f172a] p-1 rounded-lg border border-slate-800 overflow-x-auto no-scrollbar">
+        <button data-tab="globe" class="tab-btn active px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition">
+          🌍 Globe 3D Macro
         </button>
-        <button data-tab="comparator" class="tab-btn px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition">
-          ⇄ Analyseur Paires & Z-Score
+        <button data-tab="heatmap" class="tab-btn px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white whitespace-nowrap transition">
+          ⊞ Grille Heatmap
         </button>
-        <button data-tab="matrix" class="tab-btn px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition">
-          Matrice Croisée G10
+        <button data-tab="comparator" class="tab-btn px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white whitespace-nowrap transition">
+          ⇄ Paires & Z-Score
+        </button>
+        <button data-tab="matrix" class="tab-btn px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white whitespace-nowrap transition">
+          ▦ Matrice G10
         </button>
       </nav>
     </div>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <div class="max-w-[1600px] mx-auto px-4 lg:px-6 py-5 flex flex-col gap-6">
+  <div class="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 flex flex-col gap-5">
 
-    <!-- ==================== VUE 1 : HEATMAP MONÉTAIRE ==================== -->
-    <section id="view-heatmap" class="flex flex-col gap-4">
-      <!-- Toolbar -->
+    <!-- ==================== VUE 1 (PAR DÉFAUT) : GLOBE 3D INTERACTIF ==================== -->
+    <section id="view-globe" class="flex flex-col gap-3">
+      <div class="relative bg-[#080d18] border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl">
+        
+        <!-- Barre flottante supérieure : Sélecteur de métrique du Globe -->
+        <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div class="flex flex-wrap items-center gap-1 bg-[#0b111e]/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/70 text-[11px] sm:text-xs pointer-events-auto shadow-lg">
+            <button data-globe-metric="realRate" class="globe-metric-btn active px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold transition">Taux Réel</button>
+            <button data-globe-metric="nominalRate" class="globe-metric-btn px-2.5 sm:px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition">Taux Nominal</button>
+            <button data-globe-metric="headlineCpi" class="globe-metric-btn px-2.5 sm:px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition">Inflation CPI</button>
+            <button data-globe-metric="inflationGap" class="globe-metric-btn px-2.5 sm:px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition">Inflation Gap</button>
+          </div>
+
+          <div class="hidden md:flex items-center gap-2 bg-[#0b111e]/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/70 text-[11px] font-mono text-slate-300 pointer-events-auto">
+            <span>🖱️ Glisser : Tourner • Molette/Pincer : Zoomer • Clic : Fiche Pays</span>
+          </div>
+        </div>
+
+        <!-- Conteneur WebGL du Globe 3D -->
+        <div id="globe-container" class="w-full h-[66vh] min-h-[430px] max-h-[760px] cursor-grab active:cursor-grabbing flex items-center justify-center"></div>
+
+        <!-- Légende couleur flottante (bas gauche) -->
+        <div class="hidden sm:flex flex-col gap-1.5 absolute bottom-16 left-4 z-20 bg-[#0b111e]/90 backdrop-blur-md p-3 rounded-xl border border-slate-700/70 text-[10px] font-mono pointer-events-none">
+          <span id="globe-legend-title" class="text-slate-300 font-semibold uppercase">Échelle Taux Réel (%)</span>
+          <div class="w-40 h-2 rounded-full" style="background: linear-gradient(90deg, #f43f5e 0%, #f59e0b 35%, #38bdf8 65%, #10b981 100%);"></div>
+          <div class="flex justify-between text-slate-400">
+            <span>Dovish / Bas</span>
+            <span>Hawkish / Élevé</span>
+          </div>
+        </div>
+
+        <!-- Barre de navigation caméra rapide (bas centre - idéale mobile & desktop) -->
+        <div class="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-center pointer-events-none">
+          <div class="flex items-center gap-1 sm:gap-1.5 bg-[#0b111e]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono pointer-events-auto shadow-xl overflow-x-auto max-w-full">
+            <button data-cam="world" class="cam-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-sky-600 text-white transition whitespace-nowrap">🌍 Monde</button>
+            <button data-cam="europe" class="cam-btn px-2.5 py-1 rounded-lg bg-slate-800/70 hover:bg-sky-600 text-slate-200 transition whitespace-nowrap">🇪🇺 Europe</button>
+            <button data-cam="americas" class="cam-btn px-2.5 py-1 rounded-lg bg-slate-800/70 hover:bg-sky-600 text-slate-200 transition whitespace-nowrap">🇺🇸 Amériques</button>
+            <button data-cam="asia" class="cam-btn px-2.5 py-1 rounded-lg bg-slate-800/70 hover:bg-sky-600 text-slate-200 transition whitespace-nowrap">🇯🇵 Asie-Pacifique</button>
+            <button id="btn-toggle-spin" class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition whitespace-nowrap">⏸ Pause</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ruban d'accès direct aux 18 devises sous le globe (ultra pratique sur mobile) -->
+      <div id="globe-quick-pills" class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"></div>
+    </section>
+
+    <!-- ==================== VUE 2 : GRILLE HEATMAP ==================== -->
+    <section id="view-heatmap" class="hidden flex flex-col gap-4">
       <div class="bg-[#0f172a] border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
-        <!-- Scope Filter -->
         <div class="flex items-center gap-1 bg-[#080c14] p-1 rounded-lg border border-slate-800 text-xs">
           <button data-scope="ALL" class="scope-btn active px-3 py-1.5 rounded-md font-medium transition">Toutes (18)</button>
           <button data-scope="G10" class="scope-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">G10 (10)</button>
           <button data-scope="EM" class="scope-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Émergents (8)</button>
         </div>
 
-        <!-- Metric Selector -->
         <div class="flex flex-wrap items-center gap-1 bg-[#080c14] p-1 rounded-lg border border-slate-800 text-xs">
           <button data-metric="realRate" class="metric-btn active px-3 py-1.5 rounded-md font-medium transition">Taux Réel</button>
           <button data-metric="nominalRate" class="metric-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Taux Nominal</button>
           <button data-metric="headlineCpi" class="metric-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Inflation CPI</button>
           <button data-metric="coreCpi" class="metric-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Core CPI</button>
-          <button data-metric="yield2Y" class="metric-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Rendement 2Y</button>
+          <button data-metric="inflationGap" class="metric-btn px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Inflation Gap</button>
         </div>
 
-        <!-- Core Toggle & Sort -->
         <div class="flex items-center gap-2">
           <label class="inline-flex items-center gap-2 text-xs text-slate-300 bg-[#080c14] border border-slate-800 px-3 py-1.5 rounded-lg cursor-pointer select-none">
             <input type="checkbox" id="toggle-core-mode" class="accent-sky-500 rounded" />
@@ -90,16 +138,12 @@
         </div>
       </div>
 
-      <!-- Heatmap Grid -->
-      <div id="heatmap-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-        <!-- Injecté dynamiquement par app.js -->
-      </div>
+      <div id="heatmap-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
     </section>
 
-    <!-- ==================== VUE 2 : COMPARATEUR UNIVERSEL DE PAIRES ==================== -->
+    <!-- ==================== VUE 3 : COMPARATEUR UNIVERSEL DE PAIRES ==================== -->
     <section id="view-comparator" class="hidden flex flex-col gap-4">
       <div class="bg-[#0f172a] border border-slate-800 rounded-xl p-4 lg:p-5 flex flex-col gap-5">
-        <!-- Sélecteurs Base / Cotée + Inversion + Quick Chips -->
         <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div class="grid grid-cols-1 sm:grid-cols-11 gap-3 items-end flex-1">
             <div class="sm:col-span-5">
@@ -117,7 +161,6 @@
             </div>
           </div>
 
-          <!-- Quick Pairs -->
           <div class="flex flex-wrap items-center gap-1.5">
             <span class="text-[11px] text-slate-500 mr-1">Accès rapide :</span>
             <button data-pair="EUR/USD" class="quick-pair-btn px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-xs font-mono text-slate-300 border border-slate-700/70">EUR/USD</button>
@@ -130,8 +173,7 @@
           </div>
         </div>
 
-        <!-- Bandeau KPI Quantitatif de la Paire -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-[#080c14] border border-slate-800 rounded-xl p-3.5">
             <span id="kpi-pair-label" class="text-[11px] font-mono text-slate-400 uppercase block">EUR/USD SPOT</span>
             <div class="flex items-baseline gap-2 mt-1">
@@ -154,25 +196,17 @@
           </div>
 
           <div class="bg-[#080c14] border border-slate-800 rounded-xl p-3.5">
-            <span class="text-[11px] font-mono text-slate-400 uppercase block">Spread Souverain 2 Ans</span>
-            <span id="kpi-2y-spread" class="text-2xl font-mono font-bold mt-1 block">--</span>
-            <span class="text-[11px] text-slate-500 mt-0.5 block">Anticipations marché</span>
-          </div>
-
-          <div class="bg-[#080c14] border border-slate-800 rounded-xl p-3.5">
             <span class="text-[11px] font-mono text-slate-400 uppercase block">Score Divergence (24M)</span>
             <span id="kpi-zscore" class="text-2xl font-mono font-bold mt-1 block">--</span>
             <span id="kpi-zscore-signal" class="text-[11px] text-slate-400 mt-0.5 block">Régression Spot / Spread</span>
           </div>
         </div>
 
-        <!-- Contrôles du Graphique Historique -->
         <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
           <div class="flex items-center gap-1.5 text-xs">
             <span class="text-slate-400 mr-1">Superposer Spread :</span>
             <button data-spread-type="real" class="spread-type-btn active px-3 py-1 rounded-md font-medium bg-sky-500/20 text-sky-300 border border-sky-500/40">Taux Réel</button>
             <button data-spread-type="nominal" class="spread-type-btn px-3 py-1 rounded-md font-medium text-slate-400 hover:text-white">Taux Nominal</button>
-            <button data-spread-type="y2" class="spread-type-btn px-3 py-1 rounded-md font-medium text-slate-400 hover:text-white">Rendement 2Y</button>
           </div>
 
           <div class="flex items-center gap-1 bg-[#080c14] p-1 rounded-lg border border-slate-800 text-xs font-mono">
@@ -183,12 +217,11 @@
           </div>
         </div>
 
-        <!-- Chart Plotly Double Axe Y -->
-        <div id="pair-history-chart" class="w-full h-[380px] sm:h-[440px]"></div>
+        <div id="pair-history-chart" class="w-full h-[360px] sm:h-[430px]"></div>
       </div>
     </section>
 
-    <!-- ==================== VUE 3 : MATRICE CROISÉE G10 ==================== -->
+    <!-- ==================== VUE 4 : MATRICE CROISÉE G10 ==================== -->
     <section id="view-matrix" class="hidden flex flex-col gap-4">
       <div class="bg-[#0f172a] border border-slate-800 rounded-xl p-4 overflow-x-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -207,9 +240,7 @@
 
   <!-- TIROIR LATÉRAL (FICHE D'IDENTITÉ MONÉTAIRE) -->
   <div id="drawer-backdrop" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40"></div>
-  <aside id="country-drawer" class="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-[#0b111e] border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto p-5 flex flex-col gap-5">
-    <!-- Injecté dynamiquement par app.js -->
-  </aside>
+  <aside id="country-drawer" class="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-[#0b111e] border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto p-5 flex flex-col gap-5"></aside>
 
   <script type="module" src="./js/app.js"></script>
 </body>
