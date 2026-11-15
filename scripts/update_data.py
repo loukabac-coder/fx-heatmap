@@ -3,7 +3,7 @@
 Institutional FX & Monetary Policy Data Pipeline
 - 18 Currencies (G10 + Key EM)
 - Multi-source cascade (Official ECB SDW + Live Scraper + Official CB APIs + BIS + FRED)
-- Dynamic Central Bank Governors via Wikidata API (with static fallback)
+- Dynamic Central Bank Governors via Wikidata API (Officeholder P1308 + Institution P1037/P488)
 - 60-Month aligned history for Cross-FX & Real Rate Z-Score modeling
 """
 
@@ -47,7 +47,8 @@ CURRENCIES_CONFIG = {
     # === G10 ===
     "USD": dict(
         iso3="USA", group="G10", name="États-Unis", flag="🇺🇸",
-        bank="Federal Reserve (Fed)", rateLabel="Fed Funds Target (Upper)", gov="Jerome Powell", wikidata="Q58801", target=2.0,
+        bank="Federal Reserve (Fed)", rateLabel="Fed Funds Target (Upper)",
+        bankQid="Q53536", officeQid="Q1458255", target=2.0,
         fxTicker=None, yieldTicker="^IRX", teSlug="united-states",
         rate=[("fred", "DFEDTARU"), ("bis_rate", "US")],
         cpi=[("fred", "CPIAUCSL", "index"), ("bis_cpi", "US", "yoy")],
@@ -56,7 +57,8 @@ CURRENCIES_CONFIG = {
     ),
     "EUR": dict(
         iso3="FRA", group="G10", name="Zone Euro", flag="🇪🇺",
-        bank="Banque Centrale Européenne (BCE)", rateLabel="Deposit Facility Rate", gov="Christine Lagarde", wikidata="Q8901", target=2.0,
+        bank="Banque Centrale Européenne (BCE)", rateLabel="Deposit Facility Rate",
+        bankQid="Q8901", officeQid="Q3409198", target=2.0,
         fxTicker="EURUSD=X", teSlug="euro-area",
         rate=[("ecb_dfr", "DFR"), ("fred", "ECBDFR"), ("bis_rate", "XM")],
         cpi=[("bis_cpi", "XM", "yoy"), ("fred", "CP0000EZ19M086NEST", "index")],
@@ -65,7 +67,8 @@ CURRENCIES_CONFIG = {
     ),
     "JPY": dict(
         iso3="JPN", group="G10", name="Japon", flag="🇯🇵",
-        bank="Bank of Japan (BoJ)", rateLabel="Uncollateralized Overnight Call", gov="Kazuo Ueda", wikidata="Q333100", target=2.0,
+        bank="Bank of Japan (BoJ)", rateLabel="Uncollateralized Overnight Call",
+        bankQid="Q333100", officeQid="Q5589704", target=2.0,
         fxTicker="JPY=X", teSlug="japan",
         rate=[("bis_rate", "JP")],
         cpi=[("bis_cpi", "JP", "yoy"), ("fred", "JPNCPIALLMINMEI", "index")],
@@ -74,7 +77,8 @@ CURRENCIES_CONFIG = {
     ),
     "GBP": dict(
         iso3="GBR", group="G10", name="Royaume-Uni", flag="🇬🇧",
-        bank="Bank of England (BoE)", rateLabel="Official Bank Rate", gov="Andrew Bailey", wikidata="Q183100", target=2.0,
+        bank="Bank of England (BoE)", rateLabel="Official Bank Rate",
+        bankQid="Q183100", officeQid="Q5589668", target=2.0,
         fxTicker="GBPUSD=X", teSlug="united-kingdom",
         rate=[("bis_rate", "GB")],
         cpi=[("bis_cpi", "GB", "yoy"), ("fred", "GBRCPIALLMINMEI", "index")],
@@ -83,7 +87,8 @@ CURRENCIES_CONFIG = {
     ),
     "CHF": dict(
         iso3="CHE", group="G10", name="Suisse", flag="🇨🇭",
-        bank="Banque Nationale Suisse (BNS)", rateLabel="Taux Directeur BNS", gov="Martin Schlegel", wikidata="Q609152", target=2.0,
+        bank="Banque Nationale Suisse (BNS)", rateLabel="Taux Directeur BNS",
+        bankQid="Q609152", officeQid="Q19842228", target=2.0,
         fxTicker="CHF=X", teSlug="switzerland",
         rate=[("bis_rate", "CH")],
         cpi=[("bis_cpi", "CH", "yoy"), ("fred", "CHECPIALLMINMEI", "index")],
@@ -92,7 +97,8 @@ CURRENCIES_CONFIG = {
     ),
     "CAD": dict(
         iso3="CAN", group="G10", name="Canada", flag="🇨🇦",
-        bank="Bank of Canada (BoC)", rateLabel="Target Overnight Rate", gov="Tiff Macklem", wikidata="Q806176", target=2.0,
+        bank="Bank of Canada (BoC)", rateLabel="Target Overnight Rate",
+        bankQid="Q806176", officeQid="Q5589666", target=2.0,
         fxTicker="CAD=X", teSlug="canada",
         rate=[("boc", "V39079"), ("bis_rate", "CA")],
         cpi=[("bis_cpi", "CA", "yoy"), ("fred", "CANCPIALLMINMEI", "index")],
@@ -101,7 +107,8 @@ CURRENCIES_CONFIG = {
     ),
     "AUD": dict(
         iso3="AUS", group="G10", name="Australie", flag="🇦🇺",
-        bank="Reserve Bank of Australia (RBA)", rateLabel="Cash Rate Target", gov="Michele Bullock", wikidata="Q1506724", target=2.5,
+        bank="Reserve Bank of Australia (RBA)", rateLabel="Cash Rate Target",
+        bankQid="Q1506724", officeQid="Q5589725", target=2.5,
         fxTicker="AUDUSD=X", teSlug="australia",
         rate=[("bis_rate", "AU")],
         cpi=[("bis_cpi", "AU", "yoy"), ("fred", "AUSCPIALLQINMEI", "index")],
@@ -110,7 +117,8 @@ CURRENCIES_CONFIG = {
     ),
     "NZD": dict(
         iso3="NZL", group="G10", name="Nouvelle-Zélande", flag="🇳🇿",
-        bank="Reserve Bank of New Zealand (RBNZ)", rateLabel="Official Cash Rate (OCR)", gov="Christian Hawkesby", wikidata="Q1815139", target=2.0,
+        bank="Reserve Bank of New Zealand (RBNZ)", rateLabel="Official Cash Rate (OCR)",
+        bankQid="Q1815139", officeQid="Q5589726", target=2.0,
         fxTicker="NZDUSD=X", teSlug="new-zealand",
         rate=[("bis_rate", "NZ")],
         cpi=[("bis_cpi", "NZ", "yoy"), ("fred", "NZLCPIALLQINMEI", "index")],
@@ -119,7 +127,8 @@ CURRENCIES_CONFIG = {
     ),
     "SEK": dict(
         iso3="SWE", group="G10", name="Suède", flag="🇸🇪",
-        bank="Sveriges Riksbank", rateLabel="Policy Rate", gov="Erik Thedéen", wikidata="Q1423175", target=2.0,
+        bank="Sveriges Riksbank", rateLabel="Policy Rate",
+        bankQid="Q1423175", officeQid="Q5589730", target=2.0,
         fxTicker="SEK=X", teSlug="sweden",
         rate=[("bis_rate", "SE")],
         cpi=[("bis_cpi", "SE", "yoy"), ("fred", "SWECPIALLMINMEI", "index")],
@@ -128,7 +137,8 @@ CURRENCIES_CONFIG = {
     ),
     "NOK": dict(
         iso3="NOR", group="G10", name="Norvège", flag="🇳🇴",
-        bank="Norges Bank", rateLabel="Sight Deposit Rate", gov="Ida Wolden Bache", wikidata="Q1781611", target=2.0,
+        bank="Norges Bank", rateLabel="Sight Deposit Rate",
+        bankQid="Q1781611", officeQid="Q5589715", target=2.0,
         fxTicker="NOK=X", teSlug="norway",
         rate=[("bis_rate", "NO")],
         cpi=[("bis_cpi", "NO", "yoy"), ("fred", "NORCPIALLMINMEI", "index")],
@@ -138,7 +148,8 @@ CURRENCIES_CONFIG = {
     # === EMERGING MARKETS (EM) ===
     "BRL": dict(
         iso3="BRA", group="EM", name="Brésil", flag="🇧🇷",
-        bank="Banco Central do Brasil (BCB)", rateLabel="Taxa Selic Meta", gov="Gabriel Galípolo", wikidata="Q806181", target=3.0,
+        bank="Banco Central do Brasil (BCB)", rateLabel="Taxa Selic Meta",
+        bankQid="Q806181", officeQid="Q10353615", target=3.0,
         fxTicker="BRL=X", teSlug="brazil",
         rate=[("bcb", "432"), ("bis_rate", "BR")],
         cpi=[("bcb", "13522", "yoy"), ("bis_cpi", "BR", "yoy")],
@@ -147,7 +158,8 @@ CURRENCIES_CONFIG = {
     ),
     "MXN": dict(
         iso3="MEX", group="EM", name="Mexique", flag="🇲🇽",
-        bank="Banco de México (Banxico)", rateLabel="Tasa Objetivo", gov="Victoria Rodríguez Ceja", wikidata="Q806206", target=3.0,
+        bank="Banco de México (Banxico)", rateLabel="Tasa Objetivo",
+        bankQid="Q806206", officeQid="Q5589707", target=3.0,
         fxTicker="MXN=X", teSlug="mexico",
         rate=[("bis_rate", "MX")],
         cpi=[("bis_cpi", "MX", "yoy"), ("fred", "MEXCPIALLMINMEI", "index")],
@@ -156,7 +168,8 @@ CURRENCIES_CONFIG = {
     ),
     "ZAR": dict(
         iso3="ZAF", group="EM", name="Afrique du Sud", flag="🇿🇦",
-        bank="South African Reserve Bank (SARB)", rateLabel="Repo Rate", gov="Lesetja Kganyago", wikidata="Q1547209", target=4.5,
+        bank="South African Reserve Bank (SARB)", rateLabel="Repo Rate",
+        bankQid="Q1547209", officeQid="Q5589728", target=4.5,
         fxTicker="ZAR=X", teSlug="south-africa",
         rate=[("bis_rate", "ZA")],
         cpi=[("bis_cpi", "ZA", "yoy"), ("fred", "ZAFCPIALLMINMEI", "index")],
@@ -165,7 +178,8 @@ CURRENCIES_CONFIG = {
     ),
     "PLN": dict(
         iso3="POL", group="EM", name="Pologne", flag="🇵🇱",
-        bank="Narodowy Bank Polski (NBP)", rateLabel="Reference Rate", gov="Adam Glapiński", wikidata="Q258709", target=2.5,
+        bank="Narodowy Bank Polski (NBP)", rateLabel="Reference Rate",
+        bankQid="Q258709", officeQid="Q11824916", target=2.5,
         fxTicker="PLN=X", teSlug="poland",
         rate=[("bis_rate", "PL")],
         cpi=[("bis_cpi", "PL", "yoy"), ("fred", "POLCPIALLMINMEI", "index")],
@@ -174,7 +188,8 @@ CURRENCIES_CONFIG = {
     ),
     "CZK": dict(
         iso3="CZE", group="EM", name="Rép. Tchèque", flag="🇨🇿",
-        bank="Česká národní banka (CNB)", rateLabel="2W Repo Rate", gov="Aleš Michl", wikidata="Q341838", target=2.0,
+        bank="Česká národní banka (CNB)", rateLabel="2W Repo Rate",
+        bankQid="Q341838", officeQid="Q12020263", target=2.0,
         fxTicker="CZK=X", teSlug="czech-republic",
         rate=[("bis_rate", "CZ")],
         cpi=[("bis_cpi", "CZ", "yoy"), ("fred", "CZECPIALLMINMEI", "index")],
@@ -183,7 +198,8 @@ CURRENCIES_CONFIG = {
     ),
     "HUF": dict(
         iso3="HUN", group="EM", name="Hongrie", flag="🇭🇺",
-        bank="Magyar Nemzeti Bank (MNB)", rateLabel="Base Rate", gov="Mihály Varga", wikidata="Q771001", target=3.0,
+        bank="Magyar Nemzeti Bank (MNB)", rateLabel="Base Rate",
+        bankQid="Q771001", officeQid="Q66475835", target=3.0,
         fxTicker="HUF=X", teSlug="hungary",
         rate=[("bis_rate", "HU")],
         cpi=[("bis_cpi", "HU", "yoy"), ("fred", "HUNCPIALLMINMEI", "index")],
@@ -192,7 +208,8 @@ CURRENCIES_CONFIG = {
     ),
     "INR": dict(
         iso3="IND", group="EM", name="Inde", flag="🇮🇳",
-        bank="Reserve Bank of India (RBI)", rateLabel="Policy Repo Rate", gov="Sanjay Malhotra", wikidata="Q616025", target=4.0,
+        bank="Reserve Bank of India (RBI)", rateLabel="Policy Repo Rate",
+        bankQid="Q616025", officeQid="Q5589727", target=4.0,
         fxTicker="INR=X", teSlug="india",
         rate=[("bis_rate", "IN")],
         cpi=[("bis_cpi", "IN", "yoy"), ("fred", "INDCPIALLMINMEI", "index")],
@@ -201,7 +218,8 @@ CURRENCIES_CONFIG = {
     ),
     "KRW": dict(
         iso3="KOR", group="EM", name="Corée du Sud", flag="🇰🇷",
-        bank="Bank of Korea (BoK)", rateLabel="Base Rate", gov="Rhee Chang-yong", wikidata="Q485549", target=2.0,
+        bank="Bank of Korea (BoK)", rateLabel="Base Rate",
+        bankQid="Q485549", officeQid="Q5589705", target=2.0,
         fxTicker="KRW=X", teSlug="south-korea",
         rate=[("bis_rate", "KR")],
         cpi=[("bis_cpi", "KR", "yoy"), ("fred", "KORCPIALLMINMEI", "index")],
@@ -249,46 +267,61 @@ def to_yoy(series, kind):
             out[ym] = round((val / series[prev_ym] - 1.0) * 100.0, 2)
     return out
 
-# --- Gouverneurs Temps Réel (Wikidata SPARQL API) ---
+# --- Gouverneurs Temps Réel (Wikidata SPARQL API : Poste P1308 + Institution P1037/P488) ---
 def fetch_live_governors():
     """
-    Interroge Wikidata en temps réel pour récupérer le gouverneur / président actuel
-    de chacune des 18 banques centrales (propriétés P1037 directeur/gouverneur ou P488 président).
+    Récupère en temps réel le titulaire actuel de chaque poste de gouverneur/président
+    de banque centrale via Wikidata (P1308 officeholder sur le poste officiel, puis P1037/P488 sur l'institution).
     """
-    qids = " ".join(f"wd:{cfg['wikidata']}" for cfg in CURRENCIES_CONFIG.values() if cfg.get("wikidata"))
+    office_qids = " ".join(f"wd:{cfg['officeQid']}" for cfg in CURRENCIES_CONFIG.values() if cfg.get("officeQid"))
+    bank_qids = " ".join(f"wd:{cfg['bankQid']}" for cfg in CURRENCIES_CONFIG.values() if cfg.get("bankQid"))
+
     query = f"""
-    SELECT ?bank ?personLabel WHERE {{
-      VALUES ?bank {{ {qids} }}
-      {{ ?bank p:P1037 ?stmt . ?stmt ps:P1037 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+    SELECT ?entity ?personLabel WHERE {{
+      {{
+        VALUES ?entity {{ {office_qids} }}
+        ?entity p:P1308 ?stmt .
+        ?stmt ps:P1308 ?person .
+        FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }}
+      }}
       UNION
-      {{ ?bank p:P488 ?stmt . ?stmt ps:P488 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+      {{
+        VALUES ?entity {{ {bank_qids} }}
+        {{ ?entity p:P1037 ?stmt . ?stmt ps:P1037 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+        UNION
+        {{ ?entity p:P488 ?stmt . ?stmt ps:P488 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+      }}
       SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en,fr". }}
     }}
     """
-    url = "https://query.wikidata.org/sparql"
     try:
         resp = requests.get(
-            url,
+            "https://query.wikidata.org/sparql",
             params={"query": query, "format": "json"},
-            headers={"User-Agent": "FXMacroTerminalBot/1.0 (https://loukabac-coder.github.io/fx-heatmap/)"},
-            timeout=15,
+            headers={
+                "User-Agent": "FXMacroTerminal/2.0 (https://github.com/loukabac-coder/fx-heatmap; contact@github.com)",
+                "Accept": "application/sparql-results+json",
+            },
+            timeout=20,
         )
         resp.raise_for_status()
         data = resp.json()
         qid_to_gov = {}
         for row in data.get("results", {}).get("bindings", []):
-            bank_uri = row.get("bank", {}).get("value", "")
-            qid = bank_uri.split("/")[-1]
-            name = row.get("personLabel", {}).get("value", "")
-            if qid and name and not name.startswith("Q"):
+            qid = row.get("entity", {}).get("value", "").split("/")[-1]
+            name = row.get("personLabel", {}).get("value", "").strip()
+            if qid and name and not re.match(r"^Q\d+$", name):
                 qid_to_gov[qid] = name
+
         gov_map = {}
         for cur, cfg in CURRENCIES_CONFIG.items():
-            qid = cfg.get("wikidata")
-            if qid and qid in qid_to_gov:
-                gov_map[cur] = qid_to_gov[qid]
+            # Priorité au titulaire officiel du poste (officeQid), puis direction de la banque (bankQid)
+            gov = qid_to_gov.get(cfg.get("officeQid")) or qid_to_gov.get(cfg.get("bankQid"))
+            if gov:
+                gov_map[cur] = gov
         return gov_map
-    except Exception:
+    except Exception as e:
+        print(f"      [WARN] Wikidata governors fetch failed: {e}")
         return {}
 
 # --- Niveau 1 : Scraper Temps Réel (Anti-Lag) ---
@@ -634,8 +667,8 @@ def process_currency(cur, cfg, months, live_macro, live_govs, prev_snapshot, mee
     past_m = [d for d in m_dates if d <= today_iso]
     fut_m = [d for d in m_dates if d > today_iso]
 
-    # Gouverneur en temps réel (Wikidata) avec fallback sur config
-    governor_name = live_govs.get(cur) or cfg["gov"]
+    # Gouverneur en temps réel (Wikidata P1308 / P1037 / P488) avec fallback sur dernier snapshot valide
+    governor_name = live_govs.get(cur) or prev_c.get("governor") or "n.d."
 
     snapshot_item = {
         "currency": cur,
