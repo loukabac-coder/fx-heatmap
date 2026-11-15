@@ -1,5 +1,6 @@
-import csv, io, json, os, sys, time
-from datetime import datetime, timedelta, timezone
+import csv, io, json, os, re, sys, time
+from datetime import date, datetime, timedelta, timezone
+from urllib.parse import quote
 import requests
 import yfinance as yf
 
@@ -11,7 +12,7 @@ MAX_CPI_AGE_MONTHS = 3  # au-delà, l'inflation est considérée périmée
 # ---------- Config : chaque pays a une LISTE de sources (la 1re valide gagne) ----------
 # rate : (source, id)      cpi : (source, id, "yoy"|"index")
 C = {
- "USA": dict(name="États-Unis", cur="USD", bank="Federal Reserve (Fed)", gov="Jerome Powell", target=2.0,
+ "USA": dict(name="États-Unis", cur="USD", bank="Federal Reserve (Fed)", gov="Kevin Warsh", target=2.0,
    last="04 Nov 2026", next="16 Déc 2026", fx=None,
    rate=[("fred","DFEDTARU"),("bis_rate","US")], cpi=[("fred","CPIAUCSL","index"),("bis_cpi","US","yoy")]),
  "FRA": dict(name="Zone Euro", cur="EUR", bank="Banque Centrale Européenne (BCE)", gov="Christine Lagarde", target=2.0,
@@ -142,6 +143,77 @@ def to_yoy(series, kind):
         if prev in series and series[prev]: out[ym] = round((v / series[prev] - 1) * 100, 2)
     return out
 
+def cross_check(label, main_name, main_map, others, tol):
+    """Compare la source principale aux autres sur le dernier mois commun. Renvoie un avertissement si écart > tol."""
+    for name, mp in others:
+        common = sorted(set(main_map) & set(mp))
+        if not common: continue
+        ym = common[-1]
+        if abs(main_map[ym] - mp[ym]) > tol:
+            return f"{label} : écart entre sources en {ym} ({main_name} {main_map[ym]:.2f} vs {name} {mp[ym]:.2f})"
+    return None
+
+# ---------- Gouverneurs : lus automatiquement sur Wikidata (la config n'est qu'un secours) ----------
+WD_LABELS = {
+    "USA": ["Board of Governors of the Federal Reserve System", "Federal Reserve System"],
+    "FRA": ["European Central Bank"], "GBR": ["Bank of England"], "CAN": ["Bank of Canada"],
+    "BRA": ["Central Bank of Brazil"], "MEX": ["Bank of Mexico", "Banco de México"],
+    "IND": ["Reserve Bank of India"], "CHN": ["People's Bank of China"], "JPN": ["Bank of Japan"],
+    "AUS": ["Reserve Bank of Australia"], "RUS": ["Bank of Russia", "Central Bank of Russia"],
+    "CHE": ["Swiss National Bank"],
+}
+
+def wikidata_head(labels):
+    """Dirigeant actuel (mandat sans date de fin) : propriété 'chairperson' (P488) ou 'director/manager' (P1037)."""
+    for lab in labels:
+        q = ('SELECT DISTINCT ?name WHERE { ?b rdfs:label "%s"@en . '
+             '{ ?b p:P488 ?st . ?st ps:P488 ?p } UNION { ?b p:P1037 ?st . ?st ps:P1037 ?p } '
+             'FILTER NOT EXISTS { ?st pq:P582 ?end } '
+             '?p rdfs:label ?name . FILTER(LANG(?name) = "en") }') % lab
+        j = get("https://query.wikidata.org/sparql?format=json&query=" + quote(q), js=True)
+        try:
+            names = sorted({b["name"]["value"] for b in j["results"]["bindings"]})
+        except Exception:
+            names = []
+        if len(names) == 1: return names[0]
+    return None
+
+# ---------- Calendrier des réunions : calculé chaque jour à partir de meetings.json (+ Fed lue en ligne) ----------
+FR_M = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+EN_M = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+def fr_date(d): return f"{d.day:02d} {FR_M[d.month - 1]} {d.year}"
+
+def load_meetings():
+    try:
+        raw = json.load(open("meetings.json", encoding="utf-8"))
+        return {k: v for k, v in raw.items() if isinstance(v, list)}
+    except Exception as e:
+        print(f"   ! meetings.json illisible: {e}"); return {}
+
+def fed_calendar():
+    """Lit le calendrier officiel du FOMC (jour de décision = 2e jour)."""
+    html = get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm")
+    if not html: return []
+    out = []
+    try:
+        for ym in re.finditer(r"(\d{4}) FOMC Meetings(.*?)(?=\d{4} FOMC Meetings|$)", html, re.S):
+            year, block = int(ym.group(1)), ym.group(2)
+            for m in re.finditer(r"fomc-meeting__month[^>]*>\s*<strong>([A-Za-z/]+)</strong>.*?fomc-meeting__date[^>]*>\s*(\d+)(?:\s*-\s*(\d+))?", block, re.S):
+                mon = [x for x in m.group(1).split("/") if x in EN_M][-1:]
+                if mon: out.append(date(year, EN_M.index(mon[0]) + 1, int(m.group(3) or m.group(2))).isoformat())
+    except Exception as e:
+        print(f"   ! lecture calendrier Fed: {e}")
+    return sorted(set(out)) if len(out) >= 6 else []
+
+def lpr_dates(today):
+    """PBoC : fixing du LPR le 20 de chaque mois."""
+    out = []
+    for k in range(-2, 4):
+        y, m = today.year, today.month + k
+        y, m = y + (m - 1) // 12, (m - 1) % 12 + 1
+        out.append(date(y, m, 20).isoformat())
+    return out
+
 # ---------- FX réel (plus de courbe inventée) ----------
 def get_fx(ticker, months):
     if not ticker: return 1.0, {"m1": "0.0%", "m6": "0.0%", "y1": "0.0%"}, [1.0] * len(months)
@@ -163,6 +235,12 @@ def get_fx(ticker, months):
 # ---------- Main ----------
 def main():
     months = month_list(N_MONTHS)
+    today = datetime.now(timezone.utc).date()
+    MEET = load_meetings()
+    MEET["CHN"] = lpr_dates(today)
+    fed = fed_calendar()
+    if fed: MEET["USA"] = fed; print(f"Calendrier Fed lu en ligne ({len(fed)} dates)")
+    else: print("Calendrier Fed : lecture en ligne impossible, utilisation de meetings.json")
     out = {"last_updated": datetime.now(timezone.utc).strftime("%d %b %Y - %H:%M UTC"), "dates": months, "countries": {}}
 
     for iso, c in C.items():
@@ -170,10 +248,9 @@ def main():
         warn = []
 
         # Taux directeur : 1re source qui répond
-        rate_map, rate_src = {}, None
-        for s, sid in c["rate"]:
-            rate_map = SRC[s](sid)
-            if rate_map: rate_src = s; break
+        rate_all = [(s, SRC[s](sid)) for s, sid in c["rate"]]
+        rate_all = [(s, mp) for s, mp in rate_all if mp]
+        rate_src, rate_map = rate_all[0] if rate_all else (None, {})
         if not rate_map:
             print(f"   ✗ {iso} ignoré : aucun taux récupéré"); continue
         first = min(rate_map); last_known = None; hist_rate = []
@@ -183,20 +260,26 @@ def main():
             hist_rate.append(last_known)
         rate_asof = max(rate_map)
         if age_months(rate_asof) > 3: warn.append(f"taux : dernière donnée {rate_asof}")
+        w = cross_check("taux", rate_src, rate_map, rate_all[1:], 0.15)
+        if w: warn.append(w)
+        if len(rate_all) == 1: warn.append("taux : source unique (non croisé)")
 
         # Inflation : 1re source FRAÎCHE, sinon la moins périmée (signalée)
-        best = None
+        best, cands = None, []
         for s, sid, kind in c["cpi"]:
             yoy = to_yoy(SRC[s](sid), kind)
             yoy = {k: v for k, v in yoy.items() if -10 <= v <= 50}  # garde-fou : inflation plausible
             if not yoy: continue
             asof = max(yoy)
-            if best is None or asof > best[1]: best = (yoy, asof, s)
-            if age_months(asof) <= MAX_CPI_AGE_MONTHS: break
+            cands.append((s, yoy))
+            if best is None or (age_months(best[1]) > MAX_CPI_AGE_MONTHS and asof > best[1]): best = (yoy, asof, s)
         if best:
             yoy, inf_asof, inf_src = best
             hist_inf = [round(yoy[m], 2) if m in yoy else None for m in months]  # PAS de remplissage
             if age_months(inf_asof) > MAX_CPI_AGE_MONTHS: warn.append(f"inflation périmée (dernière : {inf_asof})")
+            w = cross_check("inflation", inf_src, yoy, [(n, m) for n, m in cands if m is not yoy], 0.6)
+            if w: warn.append(w)
+            if len(cands) == 1: warn.append("inflation : source unique (non croisée)")
             tail = [v for v in hist_inf if v is not None][-6:]
             if len(tail) == 6 and len(set(tail)) == 1: warn.append("inflation suspecte (6 valeurs identiques)")
         else:
@@ -215,14 +298,28 @@ def main():
                 change_m = months[i]
                 break
 
+        gov = wikidata_head(WD_LABELS.get(iso, []))
+        gov_src = "wikidata" if gov else "config"
+        gov = gov or c["gov"]
+        if gov != c["gov"]: print(f"   i gouverneur : {c['gov']} -> {gov} (Wikidata)")
+
+        ds = []
+        for x in MEET.get(iso, []):
+            try: ds.append(date.fromisoformat(x))
+            except ValueError: pass
+        past = [d for d in ds if d <= today]; fut = [d for d in ds if d > today]
+        last_meet = fr_date(max(past)) if past else "n.d."
+        next_meet = fr_date(min(fut)) if fut else "n.d."
+        if not fut: warn.append("prochaine réunion inconnue : calendrier à renouveler (meetings.json)")
+
         spot, perf, hist_fx = get_fx(c["fx"], months)
         if warn: print("   ⚠", " | ".join(warn))
 
         out["countries"][iso] = {
-            "iso3": iso, "name": c["name"], "currency": c["cur"], "bank": c["bank"], "governor": c["gov"],
+            "iso3": iso, "name": c["name"], "currency": c["cur"], "bank": c["bank"], "governor": gov, "governorSource": gov_src,
             "nominalRate": hist_rate[-1], "inflation": inflation, "target": c["target"],
             "lastDecision": decision, "lastChange": change, "lastChangeMonth": change_m,
-            "lastMeeting": c["last"], "nextMeeting": c["next"],
+            "lastMeeting": last_meet, "nextMeeting": next_meet,
             "fxPerf": perf, "usdRate": spot, "histRate": hist_rate, "histInf": hist_inf, "histFx": hist_fx,
             "rateAsOf": rate_asof, "inflationAsOf": inf_asof, "sources": {"rate": rate_src, "cpi": inf_src},
             "warnings": warn,
