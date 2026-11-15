@@ -1,9 +1,5 @@
-// public/js/charts.js
 import { getDecimals } from "./quant.js";
 
-/**
- * Graphique comparateur double axe Y : Cours Spot Historique vs Spread de Taux
- */
 export function renderPairHistoryChart(containerId, dates, spotArr, spreadArr, baseCur, quoteCur, spreadLabel) {
   const dec = getDecimals(quoteCur);
 
@@ -17,7 +13,7 @@ export function renderPairHistoryChart(containerId, dates, spotArr, spreadArr, b
     fillcolor: "rgba(56, 189, 248, 0.12)",
     line: { color: "#38bdf8", width: 1.8 },
     yaxis: "y2",
-    hovertemplate: `%{y:+.2f}%<extra>${spreadLabel}</extra>`
+    hovertemplate: `%{y:.2f}%<extra>${spreadLabel}</extra>`
   };
 
   const traceSpot = {
@@ -77,9 +73,6 @@ export function renderPairHistoryChart(containerId, dates, spotArr, spreadArr, b
   });
 }
 
-/**
- * Graphique 24 derniers mois dans le tiroir latéral d'une devise
- */
 export function renderDrawerChart(containerId, dates, rateArr, cpiArr, coreArr) {
   const sliceIdx = Math.max(0, dates.length - 24);
   const x = dates.slice(sliceIdx);
