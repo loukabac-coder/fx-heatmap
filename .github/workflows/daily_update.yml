@@ -2,35 +2,36 @@ name: Daily Macro & FX Data Update
 
 on:
   schedule:
-    - cron: '27 6 * * *' # Tourne automatiquement tous les matins à 6h00 UTC (7h/8h Paris)
-  workflow_dispatch:      # Permet aussi de le lancer manuellement en 1 clic
+    - cron: '27 6 * * *'   # Tous les matins à 6h27 UTC (7h27/8h27 Paris)
+  workflow_dispatch:       # Bouton "Run workflow" pour lancer à la main
 
 permissions:
   contents: write
 
 jobs:
-  update-data:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Installer Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install requests yfinance
+      - name: Installer les dépendances
+        run: pip install requests yfinance pandas
 
-      - name: Run macro data scraper
+      - name: Lancer le robot
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python update_data.py
 
-      - name: Commit and push updated data.json
+      - name: Publier data.json
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update macro & FX data" && git push)
+          git diff --staged --quiet || git commit -m "Mise à jour automatique des données"
+          git push
