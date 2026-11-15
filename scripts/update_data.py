@@ -2,7 +2,8 @@
 """
 Institutional FX & Monetary Policy Data Pipeline
 - 18 Currencies (G10 + Key EM)
-- Multi-source cascade (Live Scraper + Official CB APIs + BIS + FRED)
+- Multi-source cascade (Official ECB SDW + Live Scraper + Official CB APIs + BIS + FRED)
+- Dynamic Central Bank Governors via Wikidata API (with static fallback)
 - 60-Month aligned history for Cross-FX & Real Rate Z-Score modeling
 """
 
@@ -15,11 +16,9 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
@@ -48,7 +47,7 @@ CURRENCIES_CONFIG = {
     # === G10 ===
     "USD": dict(
         iso3="USA", group="G10", name="États-Unis", flag="🇺🇸",
-        bank="Federal Reserve (Fed)", rateLabel="Fed Funds Target (Upper)", gov="Jerome Powell", target=2.0,
+        bank="Federal Reserve (Fed)", rateLabel="Fed Funds Target (Upper)", gov="Jerome Powell", wikidata="Q58801", target=2.0,
         fxTicker=None, yieldTicker="^IRX", teSlug="united-states",
         rate=[("fred", "DFEDTARU"), ("bis_rate", "US")],
         cpi=[("fred", "CPIAUCSL", "index"), ("bis_cpi", "US", "yoy")],
@@ -57,16 +56,16 @@ CURRENCIES_CONFIG = {
     ),
     "EUR": dict(
         iso3="FRA", group="G10", name="Zone Euro", flag="🇪🇺",
-        bank="Banque Centrale Européenne (BCE)", rateLabel="Taux Facilité de Dépôt", gov="Christine Lagarde", target=2.0,
+        bank="Banque Centrale Européenne (BCE)", rateLabel="Deposit Facility Rate", gov="Christine Lagarde", wikidata="Q8901", target=2.0,
         fxTicker="EURUSD=X", teSlug="euro-area",
-        rate=[("fred", "ECBDFR"), ("bis_rate", "XM")],
+        rate=[("ecb_dfr", "DFR"), ("fred", "ECBDFR"), ("bis_rate", "XM")],
         cpi=[("bis_cpi", "XM", "yoy"), ("fred", "CP0000EZ19M086NEST", "index")],
         core=[("fred", "CPHPLA01EZM659N", "yoy")],
         y2=[("fred", "IRLTLT01EZM156N")]
     ),
     "JPY": dict(
         iso3="JPN", group="G10", name="Japon", flag="🇯🇵",
-        bank="Bank of Japan (BoJ)", rateLabel="Uncollateralized Overnight Call", gov="Kazuo Ueda", target=2.0,
+        bank="Bank of Japan (BoJ)", rateLabel="Uncollateralized Overnight Call", gov="Kazuo Ueda", wikidata="Q333100", target=2.0,
         fxTicker="JPY=X", teSlug="japan",
         rate=[("bis_rate", "JP")],
         cpi=[("bis_cpi", "JP", "yoy"), ("fred", "JPNCPIALLMINMEI", "index")],
@@ -75,7 +74,7 @@ CURRENCIES_CONFIG = {
     ),
     "GBP": dict(
         iso3="GBR", group="G10", name="Royaume-Uni", flag="🇬🇧",
-        bank="Bank of England (BoE)", rateLabel="Official Bank Rate", gov="Andrew Bailey", target=2.0,
+        bank="Bank of England (BoE)", rateLabel="Official Bank Rate", gov="Andrew Bailey", wikidata="Q183100", target=2.0,
         fxTicker="GBPUSD=X", teSlug="united-kingdom",
         rate=[("bis_rate", "GB")],
         cpi=[("bis_cpi", "GB", "yoy"), ("fred", "GBRCPIALLMINMEI", "index")],
@@ -84,7 +83,7 @@ CURRENCIES_CONFIG = {
     ),
     "CHF": dict(
         iso3="CHE", group="G10", name="Suisse", flag="🇨🇭",
-        bank="Banque Nationale Suisse (BNS)", rateLabel="Taux Directeur BNS", gov="Martin Schlegel", target=2.0,
+        bank="Banque Nationale Suisse (BNS)", rateLabel="Taux Directeur BNS", gov="Martin Schlegel", wikidata="Q609152", target=2.0,
         fxTicker="CHF=X", teSlug="switzerland",
         rate=[("bis_rate", "CH")],
         cpi=[("bis_cpi", "CH", "yoy"), ("fred", "CHECPIALLMINMEI", "index")],
@@ -93,7 +92,7 @@ CURRENCIES_CONFIG = {
     ),
     "CAD": dict(
         iso3="CAN", group="G10", name="Canada", flag="🇨🇦",
-        bank="Bank of Canada (BoC)", rateLabel="Target Overnight Rate", gov="Tiff Macklem", target=2.0,
+        bank="Bank of Canada (BoC)", rateLabel="Target Overnight Rate", gov="Tiff Macklem", wikidata="Q806176", target=2.0,
         fxTicker="CAD=X", teSlug="canada",
         rate=[("boc", "V39079"), ("bis_rate", "CA")],
         cpi=[("bis_cpi", "CA", "yoy"), ("fred", "CANCPIALLMINMEI", "index")],
@@ -102,7 +101,7 @@ CURRENCIES_CONFIG = {
     ),
     "AUD": dict(
         iso3="AUS", group="G10", name="Australie", flag="🇦🇺",
-        bank="Reserve Bank of Australia (RBA)", rateLabel="Cash Rate Target", gov="Michele Bullock", target=2.5,
+        bank="Reserve Bank of Australia (RBA)", rateLabel="Cash Rate Target", gov="Michele Bullock", wikidata="Q1506724", target=2.5,
         fxTicker="AUDUSD=X", teSlug="australia",
         rate=[("bis_rate", "AU")],
         cpi=[("bis_cpi", "AU", "yoy"), ("fred", "AUSCPIALLQINMEI", "index")],
@@ -111,7 +110,7 @@ CURRENCIES_CONFIG = {
     ),
     "NZD": dict(
         iso3="NZL", group="G10", name="Nouvelle-Zélande", flag="🇳🇿",
-        bank="Reserve Bank of New Zealand (RBNZ)", rateLabel="Official Cash Rate (OCR)", gov="Adrian Orr", target=2.0,
+        bank="Reserve Bank of New Zealand (RBNZ)", rateLabel="Official Cash Rate (OCR)", gov="Christian Hawkesby", wikidata="Q1815139", target=2.0,
         fxTicker="NZDUSD=X", teSlug="new-zealand",
         rate=[("bis_rate", "NZ")],
         cpi=[("bis_cpi", "NZ", "yoy"), ("fred", "NZLCPIALLQINMEI", "index")],
@@ -120,7 +119,7 @@ CURRENCIES_CONFIG = {
     ),
     "SEK": dict(
         iso3="SWE", group="G10", name="Suède", flag="🇸🇪",
-        bank="Sveriges Riksbank", rateLabel="Policy Rate", gov="Erik Thedéen", target=2.0,
+        bank="Sveriges Riksbank", rateLabel="Policy Rate", gov="Erik Thedéen", wikidata="Q1423175", target=2.0,
         fxTicker="SEK=X", teSlug="sweden",
         rate=[("bis_rate", "SE")],
         cpi=[("bis_cpi", "SE", "yoy"), ("fred", "SWECPIALLMINMEI", "index")],
@@ -129,7 +128,7 @@ CURRENCIES_CONFIG = {
     ),
     "NOK": dict(
         iso3="NOR", group="G10", name="Norvège", flag="🇳🇴",
-        bank="Norges Bank", rateLabel="Sight Deposit Rate", gov="Ida Wolden Bache", target=2.0,
+        bank="Norges Bank", rateLabel="Sight Deposit Rate", gov="Ida Wolden Bache", wikidata="Q1781611", target=2.0,
         fxTicker="NOK=X", teSlug="norway",
         rate=[("bis_rate", "NO")],
         cpi=[("bis_cpi", "NO", "yoy"), ("fred", "NORCPIALLMINMEI", "index")],
@@ -139,7 +138,7 @@ CURRENCIES_CONFIG = {
     # === EMERGING MARKETS (EM) ===
     "BRL": dict(
         iso3="BRA", group="EM", name="Brésil", flag="🇧🇷",
-        bank="Banco Central do Brasil (BCB)", rateLabel="Taxa Selic Meta", gov="Gabriel Galípolo", target=3.0,
+        bank="Banco Central do Brasil (BCB)", rateLabel="Taxa Selic Meta", gov="Gabriel Galípolo", wikidata="Q806181", target=3.0,
         fxTicker="BRL=X", teSlug="brazil",
         rate=[("bcb", "432"), ("bis_rate", "BR")],
         cpi=[("bcb", "13522", "yoy"), ("bis_cpi", "BR", "yoy")],
@@ -148,7 +147,7 @@ CURRENCIES_CONFIG = {
     ),
     "MXN": dict(
         iso3="MEX", group="EM", name="Mexique", flag="🇲🇽",
-        bank="Banco de México (Banxico)", rateLabel="Tasa Objetivo", gov="Victoria Rodríguez Ceja", target=3.0,
+        bank="Banco de México (Banxico)", rateLabel="Tasa Objetivo", gov="Victoria Rodríguez Ceja", wikidata="Q806206", target=3.0,
         fxTicker="MXN=X", teSlug="mexico",
         rate=[("bis_rate", "MX")],
         cpi=[("bis_cpi", "MX", "yoy"), ("fred", "MEXCPIALLMINMEI", "index")],
@@ -157,7 +156,7 @@ CURRENCIES_CONFIG = {
     ),
     "ZAR": dict(
         iso3="ZAF", group="EM", name="Afrique du Sud", flag="🇿🇦",
-        bank="South African Reserve Bank (SARB)", rateLabel="Repo Rate", gov="Lesetja Kganyago", target=4.5,
+        bank="South African Reserve Bank (SARB)", rateLabel="Repo Rate", gov="Lesetja Kganyago", wikidata="Q1547209", target=4.5,
         fxTicker="ZAR=X", teSlug="south-africa",
         rate=[("bis_rate", "ZA")],
         cpi=[("bis_cpi", "ZA", "yoy"), ("fred", "ZAFCPIALLMINMEI", "index")],
@@ -166,7 +165,7 @@ CURRENCIES_CONFIG = {
     ),
     "PLN": dict(
         iso3="POL", group="EM", name="Pologne", flag="🇵🇱",
-        bank="Narodowy Bank Polski (NBP)", rateLabel="Reference Rate", gov="Adam Glapiński", target=2.5,
+        bank="Narodowy Bank Polski (NBP)", rateLabel="Reference Rate", gov="Adam Glapiński", wikidata="Q258709", target=2.5,
         fxTicker="PLN=X", teSlug="poland",
         rate=[("bis_rate", "PL")],
         cpi=[("bis_cpi", "PL", "yoy"), ("fred", "POLCPIALLMINMEI", "index")],
@@ -175,7 +174,7 @@ CURRENCIES_CONFIG = {
     ),
     "CZK": dict(
         iso3="CZE", group="EM", name="Rép. Tchèque", flag="🇨🇿",
-        bank="Česká národní banka (CNB)", rateLabel="2W Repo Rate", gov="Aleš Michl", target=2.0,
+        bank="Česká národní banka (CNB)", rateLabel="2W Repo Rate", gov="Aleš Michl", wikidata="Q341838", target=2.0,
         fxTicker="CZK=X", teSlug="czech-republic",
         rate=[("bis_rate", "CZ")],
         cpi=[("bis_cpi", "CZ", "yoy"), ("fred", "CZECPIALLMINMEI", "index")],
@@ -184,7 +183,7 @@ CURRENCIES_CONFIG = {
     ),
     "HUF": dict(
         iso3="HUN", group="EM", name="Hongrie", flag="🇭🇺",
-        bank="Magyar Nemzeti Bank (MNB)", rateLabel="Base Rate", gov="Mihály Varga", target=3.0,
+        bank="Magyar Nemzeti Bank (MNB)", rateLabel="Base Rate", gov="Mihály Varga", wikidata="Q771001", target=3.0,
         fxTicker="HUF=X", teSlug="hungary",
         rate=[("bis_rate", "HU")],
         cpi=[("bis_cpi", "HU", "yoy"), ("fred", "HUNCPIALLMINMEI", "index")],
@@ -193,7 +192,7 @@ CURRENCIES_CONFIG = {
     ),
     "INR": dict(
         iso3="IND", group="EM", name="Inde", flag="🇮🇳",
-        bank="Reserve Bank of India (RBI)", rateLabel="Policy Repo Rate", gov="Sanjay Malhotra", target=4.0,
+        bank="Reserve Bank of India (RBI)", rateLabel="Policy Repo Rate", gov="Sanjay Malhotra", wikidata="Q616025", target=4.0,
         fxTicker="INR=X", teSlug="india",
         rate=[("bis_rate", "IN")],
         cpi=[("bis_cpi", "IN", "yoy"), ("fred", "INDCPIALLMINMEI", "index")],
@@ -202,7 +201,7 @@ CURRENCIES_CONFIG = {
     ),
     "KRW": dict(
         iso3="KOR", group="EM", name="Corée du Sud", flag="🇰🇷",
-        bank="Bank of Korea (BoK)", rateLabel="Base Rate", gov="Rhee Chang-yong", target=2.0,
+        bank="Bank of Korea (BoK)", rateLabel="Base Rate", gov="Rhee Chang-yong", wikidata="Q485549", target=2.0,
         fxTicker="KRW=X", teSlug="south-korea",
         rate=[("bis_rate", "KR")],
         cpi=[("bis_cpi", "KR", "yoy"), ("fred", "KORCPIALLMINMEI", "index")],
@@ -212,10 +211,12 @@ CURRENCIES_CONFIG = {
 }
 
 # --- Utilitaires HTTP & Dates ---
-def http_get(url, as_json=False, tries=3):
+def http_get(url, as_json=False, tries=3, extra_headers=None):
     for attempt in range(tries):
         try:
             headers = {"User-Agent": random.choice(USER_AGENTS), "Accept-Language": "en-US,en;q=0.9"}
+            if extra_headers:
+                headers.update(extra_headers)
             resp = requests.get(url, headers=headers, timeout=20)
             resp.raise_for_status()
             return resp.json() if as_json else resp.text
@@ -247,6 +248,48 @@ def to_yoy(series, kind):
         if prev_ym in series and series[prev_ym] > 0:
             out[ym] = round((val / series[prev_ym] - 1.0) * 100.0, 2)
     return out
+
+# --- Gouverneurs Temps Réel (Wikidata SPARQL API) ---
+def fetch_live_governors():
+    """
+    Interroge Wikidata en temps réel pour récupérer le gouverneur / président actuel
+    de chacune des 18 banques centrales (propriétés P1037 directeur/gouverneur ou P488 président).
+    """
+    qids = " ".join(f"wd:{cfg['wikidata']}" for cfg in CURRENCIES_CONFIG.values() if cfg.get("wikidata"))
+    query = f"""
+    SELECT ?bank ?personLabel WHERE {{
+      VALUES ?bank {{ {qids} }}
+      {{ ?bank p:P1037 ?stmt . ?stmt ps:P1037 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+      UNION
+      {{ ?bank p:P488 ?stmt . ?stmt ps:P488 ?person . FILTER NOT EXISTS {{ ?stmt pq:P582 ?end }} }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en,fr". }}
+    }}
+    """
+    url = "https://query.wikidata.org/sparql"
+    try:
+        resp = requests.get(
+            url,
+            params={"query": query, "format": "json"},
+            headers={"User-Agent": "FXMacroTerminalBot/1.0 (https://loukabac-coder.github.io/fx-heatmap/)"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        qid_to_gov = {}
+        for row in data.get("results", {}).get("bindings", []):
+            bank_uri = row.get("bank", {}).get("value", "")
+            qid = bank_uri.split("/")[-1]
+            name = row.get("personLabel", {}).get("value", "")
+            if qid and name and not name.startswith("Q"):
+                qid_to_gov[qid] = name
+        gov_map = {}
+        for cur, cfg in CURRENCIES_CONFIG.items():
+            qid = cfg.get("wikidata")
+            if qid and qid in qid_to_gov:
+                gov_map[cur] = qid_to_gov[qid]
+        return gov_map
+    except Exception:
+        return {}
 
 # --- Niveau 1 : Scraper Temps Réel (Anti-Lag) ---
 def scrape_live_macro_table():
@@ -318,6 +361,30 @@ def scrape_live_macro_table():
     return live_data
 
 # --- Niveau 2 : Connecteurs API Officielles & Institutionnelles ---
+def src_ecb_dfr(_sid="DFR"):
+    """
+    API officielle de la BCE (ECB Data Portal) :
+    Série FM/B.U2.EUR.4F.KR.DFR.LEV = Deposit Facility Rate (taux exact en vigueur).
+    """
+    url = "https://data-api.ecb.europa.eu/service/data/FM/B.U2.EUR.4F.KR.DFR.LEV?startPeriod=2020-01-01&format=csvdata"
+    txt = http_get(url)
+    if not txt:
+        return {}
+    out = {}
+    for row in csv.DictReader(io.StringIO(txt)):
+        tp = (row.get("TIME_PERIOD") or "")[:7]
+        val = row.get("OBS_VALUE")
+        if tp and val not in (None, ""):
+            try:
+                out[tp] = float(val)
+            except ValueError:
+                pass
+    # Étend la dernière décision officielle jusqu'au mois en cours
+    if out:
+        latest_val = out[max(out)]
+        out[datetime.now(timezone.utc).strftime("%Y-%m")] = latest_val
+    return out
+
 def src_fred(sid):
     if not FRED_API_KEY:
         return {}
@@ -403,7 +470,14 @@ def src_bis_cpi(cc):
             best = yoy
     return best
 
-SRC_MAP = {"fred": src_fred, "boc": src_boc, "bcb": src_bcb, "bis_rate": src_bis_rate, "bis_cpi": src_bis_cpi}
+SRC_MAP = {
+    "ecb_dfr": src_ecb_dfr,
+    "fred": src_fred,
+    "boc": src_boc,
+    "bcb": src_bcb,
+    "bis_rate": src_bis_rate,
+    "bis_cpi": src_bis_cpi,
+}
 
 # --- FX Historique & Spot (60 mois alignés) ---
 def fetch_fx_series(ticker, months):
@@ -430,7 +504,7 @@ def fetch_fx_series(ticker, months):
         return None, None, [None] * len(months)
 
 # --- Traitement Parallèle par Devise ---
-def process_currency(cur, cfg, months, live_macro, prev_snapshot, meetings_db):
+def process_currency(cur, cfg, months, live_macro, live_govs, prev_snapshot, meetings_db):
     current_ym = months[-1]
     prev_ym = months[-2]
     slug_key = cfg["teSlug"].replace("-", " ")
@@ -445,8 +519,8 @@ def process_currency(cur, cfg, months, live_macro, prev_snapshot, meetings_db):
             rate_series.update(res)
             break
 
-    # Injection temps réel si plausible (variation <= 2.5% vs dernier connu)
-    if "rate" in live_entry:
+    # Injection temps réel TradingEconomics SAUF pour EUR (où l'API officielle ECB Deposit Facility Rate fait foi)
+    if cur != "EUR" and "rate" in live_entry:
         live_r = live_entry["rate"]
         last_hist_r = rate_series[max(rate_series)] if rate_series else prev_c.get("nominalRate")
         if last_hist_r is None or abs(live_r - last_hist_r) <= 2.5:
@@ -560,6 +634,9 @@ def process_currency(cur, cfg, months, live_macro, prev_snapshot, meetings_db):
     past_m = [d for d in m_dates if d <= today_iso]
     fut_m = [d for d in m_dates if d > today_iso]
 
+    # Gouverneur en temps réel (Wikidata) avec fallback sur config
+    governor_name = live_govs.get(cur) or cfg["gov"]
+
     snapshot_item = {
         "currency": cur,
         "iso3": cfg["iso3"],
@@ -568,7 +645,7 @@ def process_currency(cur, cfg, months, live_macro, prev_snapshot, meetings_db):
         "flag": cfg["flag"],
         "bank": cfg["bank"],
         "rateLabel": cfg["rateLabel"],
-        "governor": cfg["gov"],
+        "governor": governor_name,
         "target": cfg["target"],
         "nominalRate": nominal_rate,
         "headlineCpi": headline_cpi,
@@ -603,9 +680,10 @@ def main():
     prev_snapshot = json.loads(SNAPSHOT_FILE.read_text(encoding="utf-8")) if SNAPSHOT_FILE.exists() else {}
     meetings_db = json.loads(MEETINGS_FILE.read_text(encoding="utf-8")) if MEETINGS_FILE.exists() else {}
 
-    print("[1/3] Scraping temps réel des taux directeurs, CPI, Core CPI & 2Y Yields...")
+    print("[1/3] Scraping temps réel des taux directeurs, CPI, Core CPI, 2Y Yields & Gouverneurs...")
     live_macro = scrape_live_macro_table()
-    print(f"      -> {len(live_macro)} pays extraits du flux live.")
+    live_govs = fetch_live_governors()
+    print(f"      -> {len(live_macro)} pays extraits du flux live | {len(live_govs)} gouverneurs synchronisés.")
 
     print("[2/3] Collecte parallèle multi-sources sur 18 devises (G10 + EM)...")
     snapshots = {}
@@ -613,7 +691,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = {
-            pool.submit(process_currency, cur, cfg, months, live_macro, prev_snapshot, meetings_db): cur
+            pool.submit(process_currency, cur, cfg, months, live_macro, live_govs, prev_snapshot, meetings_db): cur
             for cur, cfg in CURRENCIES_CONFIG.items()
         }
         for fut in as_completed(futures):
@@ -622,7 +700,7 @@ def main():
                 c_code, snap, hist = fut.result()
                 snapshots[c_code] = snap
                 histories[c_code] = hist
-                print(f"      ✓ {c_code} | Nom: {snap['nominalRate']}% | CPI: {snap['headlineCpi']}% | Real: {snap['realRateStd']}% | 2Y: {snap['yield2Y']}%")
+                print(f"      ✓ {c_code} ({snap['governor']}) | Nom: {snap['nominalRate']}% | CPI: {snap['headlineCpi']}% | Real: {snap['realRateStd']}% | 2Y: {snap['yield2Y']}%")
             except Exception as exc:
                 print(f"      ✗ Erreur critique sur {cur}: {exc}")
 
