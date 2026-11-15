@@ -1,0 +1,110 @@
+{
+  "USA": {
+    "dates": [
+      "2026-01-28",
+      "2026-03-18",
+      "2026-04-29",
+      "2026-06-17",
+      "2026-07-29",
+      "2026-09-16",
+      "2026-10-28",
+      "2026-12-09"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "FRA": {
+    "dates": [
+      "2026-10-29",
+      "2026-12-17"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "GBR": {
+    "dates": [
+      "2026-09-17",
+      "2026-11-05",
+      "2026-12-17",
+      "2027-02-04",
+      "2027-03-18",
+      "2027-04-29",
+      "2027-06-17",
+      "2027-07-29",
+      "2027-09-16",
+      "2027-11-04",
+      "2027-12-16"
+    ],
+    "refreshed": "2026-11-15",
+    "governor": null
+  },
+  "CAN": {
+    "dates": [
+      "2026-10-28",
+      "2026-12-09"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "BRA": {
+    "dates": [
+      "2026-11-04",
+      "2026-12-16"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "MEX": {
+    "dates": [
+      "2026-11-12",
+      "2026-12-17"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "IND": {
+    "dates": [
+      "2026-10-09",
+      "2026-12-04"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "CHN": {
+    "dates": [],
+    "refreshed": null,
+    "governor": null
+  },
+  "JPN": {
+    "dates": [
+      "2026-10-30",
+      "2026-12-18"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "AUS": {
+    "dates": [
+      "2026-11-03",
+      "2026-12-08"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "RUS": {
+    "dates": [
+      "2026-10-23",
+      "2026-12-18"
+    ],
+    "refreshed": null,
+    "governor": null
+  },
+  "CHE": {
+    "dates": [
+      "2026-09-24",
+      "2026-12-10"
+    ],
+    "refreshed": null,
+    "governor": null
+  }
+}
