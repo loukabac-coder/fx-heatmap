@@ -2,15 +2,20 @@ name: Institutional FX & Macro Pipeline (4H)
 
 on:
   schedule:
-    - cron: '15 */4 * * *' # Toutes les 4 heures (00:15, 04:15, 08:15, 12:15, 16:15, 20:15 UTC)
+    - cron: '15 */4 * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  run-pipeline:
+  update-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,3 +41,12 @@ jobs:
           git add public/data/fx_macro_snapshot.json public/data/fx_history.json public/data/meetings.json
           git diff --staged --quiet || git commit -m "chore(data): update macro & FX snapshot [skip ci]"
           git push
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
