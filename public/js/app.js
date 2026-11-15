@@ -26,15 +26,11 @@ const STATE = {
 const fmtPct = (v, sign = false) =>
   v == null ? "n.d." : `${sign && v > 0 ? "+" : ""}${v.toFixed(2)}%`;
 
-const fmtBps = (v) =>
-  v == null ? "n.d." : `${v > 0 ? "+" : ""}${Math.round(v * 100)} bps`;
-
-// --- Chargement des données Static-First + Live Rates ---
 async function bootstrap() {
   try {
     const [snapRes, histRes] = await Promise.all([
-      fetch("/data/fx_macro_snapshot.json"),
-      fetch("/data/fx_history.json")
+      fetch("./data/fx_macro_snapshot.json?t=" + Date.now()),
+      fetch("./data/fx_history.json?t=" + Date.now())
     ]);
     const snapJson = await snapRes.json();
     const histJson = await histRes.json();
@@ -47,25 +43,34 @@ async function bootstrap() {
     renderAll();
     updateSyncBadge();
 
-    // Rafraîchissement asynchrone des cours spot via Netlify Function (cache CDN 5 min)
     fetchLiveSpotRates();
   } catch (err) {
-    document.getElementById("sync-status").textContent = "Erreur chargement données";
+    document.getElementById("sync-status").textContent = "En attente des données (lancer Actions)";
     console.error(err);
   }
 }
 
 async function fetchLiveSpotRates() {
   try {
-    const res = await fetch("/api/live-rates");
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
     if (!res.ok) return;
     const data = await res.json();
-    if (data.status === "live" && data.rates) {
-      for (const [cur, rate] of Object.entries(data.rates)) {
-        if (STATE.currencies[cur]) {
-          STATE.currencies[cur].usdRate = rate;
+    if (data.result === "success" && data.rates) {
+      for (const [cur, unitsPerUsd] of Object.entries(data.rates)) {
+        if (STATE.currencies[cur] && unitsPerUsd > 0) {
+          STATE.currencies[cur].usdRate = +(1.0 / unitsPerUsd).toFixed(6);
         }
       }
+      const timeStr = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      STATE.liveStatus = `Spot Live ${timeStr}`;
+      updateSyncBadge();
+      renderComparator();
+      renderG10Matrix();
+    }
+  } catch {
+    // Repli silencieux sur le snapshot
+  }
+}
       const timeStr = new Date(data.timestamp).toLocaleTimeString("fr-FR", {
         hour: "2-digit",
         minute: "2-digit"
