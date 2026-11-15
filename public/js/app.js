@@ -29,8 +29,8 @@ const fmtPct = (v, sign = false) =>
 async function bootstrap() {
   try {
     const [snapRes, histRes] = await Promise.all([
-      fetch("./data/fx_macro_snapshot.json?t=" + Date.now()),
-      fetch("./data/fx_history.json?t=" + Date.now())
+     fetch("./data/fx_macro_snapshot.json?t=" + Date.now()),
+     fetch("./data/fx_history.json?t=" + Date.now())
     ]);
     const snapJson = await snapRes.json();
     const histJson = await histRes.json();
