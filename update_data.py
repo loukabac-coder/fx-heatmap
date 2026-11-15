@@ -6,6 +6,7 @@ import yfinance as yf
 
 FRED_API_KEY = os.environ.get("FRED_API_KEY")
 HEADERS = {"User-Agent": "Mozilla/5.0 (fx-heatmap-bot)"}
+REFRESH_DAYS = 3  # le robot relit les calendriers officiels tous les 3 jours
 N_MONTHS = 24
 MAX_CPI_AGE_MONTHS = 3  # au-delà, l'inflation est considérée périmée
 
@@ -184,11 +185,63 @@ EN_M = ["January", "February", "March", "April", "May", "June", "July", "August"
 def fr_date(d): return f"{d.day:02d} {FR_M[d.month - 1]} {d.year}"
 
 def load_meetings():
-    try:
-        raw = json.load(open("meetings.json", encoding="utf-8"))
-        return {k: v for k, v in raw.items() if isinstance(v, list)}
+    """meetings.json : {ISO: {"dates": [...], "refreshed": "YYYY-MM-DD"|null, "governor": str|null}}"""
+    try: raw = json.load(open("meetings.json", encoding="utf-8"))
     except Exception as e:
-        print(f"   ! meetings.json illisible: {e}"); return {}
+        print(f"   ! meetings.json illisible: {e}"); raw = {}
+    out = {}
+    for k, v in raw.items():
+        if isinstance(v, list): v = {"dates": v}
+        if isinstance(v, dict): out[k] = {"dates": sorted(v.get("dates", [])), "refreshed": v.get("refreshed"), "governor": v.get("governor")}
+    return out
+
+# Pages officielles (gratuit). Chaque page est lue, les dates sont extraites puis VALIDÉES (futures, espacées, plausibles).
+SCRAPE = {
+    "GBR": ["https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates"],
+    "CAN": ["https://www.bankofcanada.ca/core-functions/monetary-policy/key-interest-rate/"],
+    "AUS": ["https://www.rba.gov.au/monetary-policy/rba-board-meetings/{year}.html"],
+    "CHE": ["https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions/schedule"],
+    "BRA": ["https://www.bcb.gov.br/en/monetarypolicy/copomcalendar"],
+}
+_MON = r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?"
+_P1 = re.compile(r"(\d{1,2})(?:st|nd|rd|th)?(?:\s*[-–]\s*(\d{1,2})(?:st|nd|rd|th)?)?\s+" + _MON + r"\s*,?\s+(20\d\d)")
+_P2 = re.compile(_MON + r"\s+(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s*,?\s+(20\d\d)")
+_P3 = re.compile(r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+(\d{1,2})\s+" + _MON)
+
+def _mnum(txt): return ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].index(txt[:3].lower()) + 1
+
+def extract_dates(text, today):
+    """Extrait des dates de décision d'un texte de page ; renvoie [] si le résultat n'est pas plausible."""
+    import html as _h
+    text = re.sub(r"<(script|style).*?</\1>", " ", text, flags=re.S | re.I)
+    text = _h.unescape(re.sub(r"<[^>]+>", " ", text)); text = re.sub(r"\s+", " ", text)
+    found = []
+    # Style "Thursday 5 November" (BoE) : année prise sur le titre précédent. Prioritaire s'il est présent.
+    for m in _P3.finditer(text):
+        years = re.findall(r"\b(20\d\d)\b", text[:m.start()])
+        if years: found.append((int(years[-1]), _mnum(m.group(2)), int(m.group(1))))
+    if len(found) < 3:
+        found = []
+        for m in _P1.finditer(text):
+            found.append((int(m.group(4)), _mnum(m.group(3)), int(m.group(2) or m.group(1))))
+        for m in _P2.finditer(text):
+            found.append((int(m.group(4)), _mnum(m.group(1)), int(m.group(3) or m.group(2))))
+    out = set()
+    for y, mo, d in found:
+        try: dt = date(y, mo, d)
+        except ValueError: continue
+        if today < dt <= today + timedelta(days=400): out.add(dt)
+    out = sorted(out)
+    if len(out) < 3 or any((b - a).days < 20 for a, b in zip(out, out[1:])): return []
+    return [d.isoformat() for d in out]
+
+def scrape_dates(urls, today):
+    for u in urls:
+        html = get(u.format(year=today.year), tries=2)
+        if html:
+            d = extract_dates(html, today)
+            if d: return d
+    return []
 
 def fed_calendar():
     """Lit le calendrier officiel du FOMC (jour de décision = 2e jour)."""
@@ -237,15 +290,32 @@ def main():
     months = month_list(N_MONTHS)
     today = datetime.now(timezone.utc).date()
     MEET = load_meetings()
-    MEET["CHN"] = lpr_dates(today)
     fed = fed_calendar()
-    if fed: MEET["USA"] = fed; print(f"Calendrier Fed lu en ligne ({len(fed)} dates)")
-    else: print("Calendrier Fed : lecture en ligne impossible, utilisation de meetings.json")
+    print("Calendrier Fed lu en ligne" if fed else "Calendrier Fed : lecture en ligne impossible, repli sur meetings.json")
+    changed = False
+    for iso_, urls in SCRAPE.items():
+        e = MEET.setdefault(iso_, {"dates": [], "refreshed": None, "governor": None})
+        fut = [d for d in e["dates"] if d > today.isoformat()]
+        age = (today - date.fromisoformat(e["refreshed"])).days if e.get("refreshed") else 999
+        if age >= REFRESH_DAYS or len(fut) < 2:
+            found = scrape_dates(urls, today)
+            if found:
+                e["dates"] = sorted({d for d in e["dates"] if d <= today.isoformat()} | set(found))
+                e["refreshed"] = today.isoformat(); changed = True
+                print(f"Calendrier {iso_} lu sur le site officiel ({len(found)} dates)")
+            else:
+                print(f"Calendrier {iso_} : lecture officielle impossible, repli sur meetings.json")
+    MEET_DATES = {k: v["dates"] for k, v in MEET.items()}
+    MEET_DATES["CHN"] = lpr_dates(today)
+    if fed: MEET_DATES["USA"] = fed
+    # mémoriser les dates passées de la Fed pour que "dernière réunion" survive
+    for iso_ in C: MEET.setdefault(iso_, {"dates": [], "refreshed": None, "governor": None})
+
     out = {"last_updated": datetime.now(timezone.utc).strftime("%d %b %Y - %H:%M UTC"), "dates": months, "countries": {}}
 
     for iso, c in C.items():
         print(f"== {iso}")
-        warn = []
+        warn, notes = [], []
 
         # Taux directeur : 1re source qui répond
         rate_all = [(s, SRC[s](sid)) for s, sid in c["rate"]]
@@ -262,7 +332,7 @@ def main():
         if age_months(rate_asof) > 3: warn.append(f"taux : dernière donnée {rate_asof}")
         w = cross_check("taux", rate_src, rate_map, rate_all[1:], 0.15)
         if w: warn.append(w)
-        if len(rate_all) == 1: warn.append("taux : source unique (non croisé)")
+        if len(rate_all) == 1: notes.append("taux : source unique")
 
         # Inflation : 1re source FRAÎCHE, sinon la moins périmée (signalée)
         best, cands = None, []
@@ -279,7 +349,7 @@ def main():
             if age_months(inf_asof) > MAX_CPI_AGE_MONTHS: warn.append(f"inflation périmée (dernière : {inf_asof})")
             w = cross_check("inflation", inf_src, yoy, [(n, m) for n, m in cands if m is not yoy], 0.6)
             if w: warn.append(w)
-            if len(cands) == 1: warn.append("inflation : source unique (non croisée)")
+            if len(cands) == 1: notes.append("inflation : source unique")
             tail = [v for v in hist_inf if v is not None][-6:]
             if len(tail) == 6 and len(set(tail)) == 1: warn.append("inflation suspecte (6 valeurs identiques)")
         else:
@@ -298,19 +368,21 @@ def main():
                 change_m = months[i]
                 break
 
-        gov = wikidata_head(WD_LABELS.get(iso, []))
-        gov_src = "wikidata" if gov else "config"
-        gov = gov or c["gov"]
+        wd = wikidata_head(WD_LABELS.get(iso, []))
+        gov = wd or c["gov"]
+        gov_src = "wikidata" if wd else "config"
         if gov != c["gov"]: print(f"   i gouverneur : {c['gov']} -> {gov} (Wikidata)")
 
         ds = []
-        for x in MEET.get(iso, []):
+        for x in MEET_DATES.get(iso, []):
             try: ds.append(date.fromisoformat(x))
             except ValueError: pass
         past = [d for d in ds if d <= today]; fut = [d for d in ds if d > today]
         last_meet = fr_date(max(past)) if past else "n.d."
         next_meet = fr_date(min(fut)) if fut else "n.d."
-        if not fut: warn.append("prochaine réunion inconnue : calendrier à renouveler (meetings.json)")
+        last_iso = max(past).isoformat() if past else None
+        next_iso = min(fut).isoformat() if fut else None
+        if not fut: warn.append("prochaine réunion inconnue : calendrier à renouveler")
 
         spot, perf, hist_fx = get_fx(c["fx"], months)
         if warn: print("   ⚠", " | ".join(warn))
@@ -319,16 +391,20 @@ def main():
             "iso3": iso, "name": c["name"], "currency": c["cur"], "bank": c["bank"], "governor": gov, "governorSource": gov_src,
             "nominalRate": hist_rate[-1], "inflation": inflation, "target": c["target"],
             "lastDecision": decision, "lastChange": change, "lastChangeMonth": change_m,
-            "lastMeeting": last_meet, "nextMeeting": next_meet,
+            "lastMeeting": last_meet, "nextMeeting": next_meet, "lastMeetingISO": last_iso, "nextMeetingISO": next_iso,
             "fxPerf": perf, "usdRate": spot, "histRate": hist_rate, "histInf": hist_inf, "histFx": hist_fx,
             "rateAsOf": rate_asof, "inflationAsOf": inf_asof, "sources": {"rate": rate_src, "cpi": inf_src},
-            "warnings": warn,
+            "warnings": warn, "notes": notes,
         }
 
     # Garde-fou : ne jamais écraser un bon data.json avec un mauvais
     if "USA" not in out["countries"] or len(out["countries"]) < 10:
         print("✗ Trop de pays manquants : data.json NON écrasé."); sys.exit(1)
 
+    if changed:
+        with open("meetings.json", "w", encoding="utf-8") as f:
+            json.dump(MEET, f, ensure_ascii=False, indent=2)
+        print("meetings.json mis à jour")
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     bad = [k for k, v in out["countries"].items() if v["warnings"]]
