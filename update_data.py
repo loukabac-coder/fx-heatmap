@@ -110,7 +110,27 @@ def _bis(flow, key, unit=None):
     return out
 
 def src_bis_rate(cc): return _bis("WS_CBPOL", f"M.{cc}")
-def src_bis_cpi(cc):  return _bis("WS_LONG_CPI", f"M.{cc}", unit="628")  # 628 = variation annuelle en %
+def src_bis_cpi(cc):
+    """Lit TOUTES les séries BIS du pays, détecte indice vs % annuel, renvoie un % annuel plausible."""
+    txt = get(f"https://stats.bis.org/api/v1/data/WS_LONG_CPI/M.{cc}?startPeriod=2023-06&format=csv")
+    if not txt: return {}
+    groups = {}
+    for row in csv.DictReader(io.StringIO(txt)):
+        ym, v = (row.get("TIME_PERIOD") or "")[:7], row.get("OBS_VALUE")
+        if not ym or v in (None, ""): continue
+        key = tuple(sorted((k, val) for k, val in row.items() if not k.startswith("OBS_") and k not in ("TIME_PERIOD", "TITLE", "TITLE_TS")))
+        try: groups.setdefault(key, {})[ym] = float(v)
+        except ValueError: pass
+    best = {}
+    for ser in groups.values():
+        vals = sorted(ser.values())
+        if not vals: continue
+        median = vals[len(vals) // 2]
+        yoy = to_yoy(ser, "index") if abs(median) > 40 else ser  # grand nombre = niveau d'indice
+        yoy = {k: v for k, v in yoy.items() if -10 <= v <= 50}
+        if yoy and (not best or max(yoy) > max(best) or (max(yoy) == max(best) and len(yoy) > len(best))):
+            best = yoy
+    return best
 
 SRC = {"fred": src_fred, "boc": src_boc, "bcb": src_bcb, "bis_rate": src_bis_rate, "bis_cpi": src_bis_cpi}
 
@@ -168,6 +188,7 @@ def main():
         best = None
         for s, sid, kind in c["cpi"]:
             yoy = to_yoy(SRC[s](sid), kind)
+            yoy = {k: v for k, v in yoy.items() if -10 <= v <= 50}  # garde-fou : inflation plausible
             if not yoy: continue
             asof = max(yoy)
             if best is None or asof > best[1]: best = (yoy, asof, s)
