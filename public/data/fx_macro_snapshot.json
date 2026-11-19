@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastUpdatedUTC": "2026-11-19 01:54 UTC",
-    "timestamp": "2026-11-19T01:54:13.395636+00:00",
+    "lastUpdatedUTC": "2026-11-19 13:19 UTC",
+    "timestamp": "2026-11-19T13:19:52.748507+00:00",
     "currencyCount": 18,
     "historyMonths": 60
   },
@@ -53,8 +53,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.097574,
-      "chg24h": -0.156
+      "usdRate": 1.099505,
+      "chg24h": 0.02
     },
     "JPY": {
       "currency": "JPY",
@@ -78,8 +78,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.006275,
-      "chg24h": 0.096
+      "usdRate": 0.006253,
+      "chg24h": -0.255
     },
     "GBP": {
       "currency": "GBP",
@@ -103,8 +103,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.31444,
-      "chg24h": -0.459
+      "usdRate": 1.31508,
+      "chg24h": -0.41
     },
     "CHF": {
       "currency": "CHF",
@@ -128,8 +128,8 @@
       "lastChangeMonth": "2025-06",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 1.186226,
-      "chg24h": -0.204
+      "usdRate": 1.187099,
+      "chg24h": -0.131
     },
     "CAD": {
       "currency": "CAD",
@@ -153,8 +153,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.697584,
-      "chg24h": -0.252
+      "usdRate": 0.699584,
+      "chg24h": 0.034
     },
     "AUD": {
       "currency": "AUD",
@@ -178,8 +178,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.668449,
-      "chg24h": -0.82
+      "usdRate": 0.671321,
+      "chg24h": -0.394
     },
     "NZD": {
       "currency": "NZD",
@@ -203,8 +203,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.54933,
-      "chg24h": -0.087
+      "usdRate": 0.552792,
+      "chg24h": 0.543
     },
     "SEK": {
       "currency": "SEK",
@@ -228,8 +228,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.098296,
-      "chg24h": -0.461
+      "usdRate": 0.098594,
+      "chg24h": -0.159
     },
     "NOK": {
       "currency": "NOK",
@@ -253,8 +253,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.103039,
-      "chg24h": -0.838
+      "usdRate": 0.103218,
+      "chg24h": -0.666
     },
     "BRL": {
       "currency": "BRL",
@@ -278,8 +278,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.173106,
-      "chg24h": 0.1
+      "usdRate": 0.169857,
+      "chg24h": -1.877
     },
     "MXN": {
       "currency": "MXN",
@@ -303,8 +303,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.05289,
-      "chg24h": -2.602
+      "usdRate": 0.052924,
+      "chg24h": -2.539
     },
     "ZAR": {
       "currency": "ZAR",
@@ -328,8 +328,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.057793,
-      "chg24h": -2.271
+      "usdRate": 0.057828,
+      "chg24h": -2.212
     },
     "PLN": {
       "currency": "PLN",
@@ -353,8 +353,8 @@
       "lastChangeMonth": "2026-03",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.248657,
-      "chg24h": -0.492
+      "usdRate": 0.248914,
+      "chg24h": -0.389
     },
     "CZK": {
       "currency": "CZK",
@@ -378,8 +378,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.044962,
-      "chg24h": -0.441
+      "usdRate": 0.045013,
+      "chg24h": -0.328
     },
     "HUF": {
       "currency": "HUF",
@@ -403,8 +403,8 @@
       "lastChangeMonth": "2026-08",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.002977,
-      "chg24h": -0.8
+      "usdRate": 0.002975,
+      "chg24h": -0.866
     },
     "INR": {
       "currency": "INR",
@@ -428,8 +428,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.010698,
-      "chg24h": 0.526
+      "usdRate": 0.010719,
+      "chg24h": 0.196
     },
     "KRW": {
       "currency": "KRW",
@@ -453,8 +453,8 @@
       "lastChangeMonth": "2026-08",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.000751,
-      "chg24h": 0.133
+      "usdRate": 0.000753,
+      "chg24h": 0.4
     }
   }
 }
