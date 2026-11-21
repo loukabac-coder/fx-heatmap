@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastUpdatedUTC": "2026-11-21 01:34 UTC",
-    "timestamp": "2026-11-21T01:34:37.845717+00:00",
+    "lastUpdatedUTC": "2026-11-21 12:44 UTC",
+    "timestamp": "2026-11-21T12:44:01.228554+00:00",
     "currencyCount": 18,
     "historyMonths": 60
   },
@@ -153,8 +153,8 @@
       "lastChangeMonth": "2026-11",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.69718,
-      "chg24h": -0.089
+      "usdRate": 0.69735,
+      "chg24h": 0.024
     },
     "AUD": {
       "currency": "AUD",
@@ -178,8 +178,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.665619,
-      "chg24h": -0.843
+      "usdRate": 0.661901,
+      "chg24h": -0.559
     },
     "NZD": {
       "currency": "NZD",
@@ -203,8 +203,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.548143,
-      "chg24h": -0.13
+      "usdRate": 0.547046,
+      "chg24h": -0.2
     },
     "SEK": {
       "currency": "SEK",
@@ -228,8 +228,8 @@
       "lastChangeMonth": "2025-10",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.09808,
-      "chg24h": -0.263
+      "usdRate": 0.097804,
+      "chg24h": -0.281
     },
     "NOK": {
       "currency": "NOK",
@@ -253,8 +253,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.102352,
-      "chg24h": -0.712
+      "usdRate": 0.10257,
+      "chg24h": 0.213
     },
     "BRL": {
       "currency": "BRL",
@@ -278,8 +278,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.168535,
-      "chg24h": -0.873
+      "usdRate": 0.169279,
+      "chg24h": 0.441
     },
     "MXN": {
       "currency": "MXN",
@@ -328,8 +328,8 @@
       "lastChangeMonth": "2026-09",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.05716,
-      "chg24h": -1.287
+      "usdRate": 0.056864,
+      "chg24h": -0.518
     },
     "PLN": {
       "currency": "PLN",
@@ -428,8 +428,8 @@
       "lastChangeMonth": "2025-12",
       "lastMeeting": "n.d.",
       "nextMeeting": "n.d.",
-      "usdRate": 0.010719,
-      "chg24h": 0.187
+      "usdRate": 0.010791,
+      "chg24h": 0.672
     },
     "KRW": {
       "currency": "KRW",
